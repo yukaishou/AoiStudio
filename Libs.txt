@@ -2,3 +2,4 @@ pygame-ce
 pyqt5
 pywin32
 pillow
+pyinstaller
