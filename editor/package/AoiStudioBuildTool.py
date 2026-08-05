@@ -5,7 +5,7 @@ import sys
 import time
 import gc
 from tkinter import filedialog
-from editor.os_tools import tool_image_to_ico, tool_chage_exe_icon
+from os_tools import tool_image_to_ico, tool_chage_exe_icon
 import assets_bundle_package_build
 
 class AoiBuildTool:

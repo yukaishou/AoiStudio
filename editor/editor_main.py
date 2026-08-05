@@ -11,7 +11,7 @@ from PyQt5.QtCore import (Qt, QMimeData, QPoint,
                           QDir, QFileInfo, QUrl)
 from PyQt5.QtGui import QIcon, QPixmap
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
-from engine_src import AoiStudioCrasher
+import AoiStudioCrasher
 import json
 import editor_dialog
 import editor_script
