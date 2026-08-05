@@ -1,0 +1,11 @@
+{
+  "name": "AoiStudio",
+  "game_size": [
+    1200,
+    768
+  ],
+  "splash_screen": true,
+  "show_studio_logo": true,
+  "show_made_with_engine": true,
+  "engine_version": "v0.1.1-internal"
+}

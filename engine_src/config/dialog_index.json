@@ -1,0 +1,6 @@
+{
+    "test_dialog_editor_work": "dialogs\\dialog_editor_test.json",
+    "example1": "dialogs\\Yukimura_Chieri\\001.json",
+    "example2": "dialogs\\Yukimura_Chieri\\002.json",
+    "example3": "dialogs\\Yukimura_Chieri\\003.json"
+}
