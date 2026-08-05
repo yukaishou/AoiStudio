@@ -22,3 +22,4 @@
     abt：运行make_abt.py，生成在make_out/abt_output
 上传PR的时候记得在PR_Uploaders_list.txt留下名字，不留也可以ovo
 图标是老子画的ovo
+还有，作者比较懒，主干更新比较慢，欢迎催更
