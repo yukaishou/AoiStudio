@@ -94,7 +94,7 @@ class Engine:
 
                     # 测试用，保存游戏,读取游戏
                     if event.key == pygame.K_s:
-                        self.save_game.save_game_ui("test_save_game.save")
+                        self.save_game.save_game("test_save_game.save")
                     if event.key == pygame.K_l:
                         if not self.in_dialog_game:
                             self.in_dialog_game  = True
