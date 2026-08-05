@@ -58,7 +58,10 @@ class Engine:
         self.save_game_ui = ui_loader_.load_from_file(self.main_menu_config["save_game_ui_path"][5:])
         self.settings = ui_loader_.load_from_file(self.main_menu_config["settings_ui_path"][5:])
         self.main_menu_bgm = self.resource_manager.load_sound(self.main_menu_config["bgm"][5:])
-        self.main_menu_background = image.Image(self.resource_manager.load_image(self.main_menu_config["background"][5:]),None,[0,0],[1,1],"fill",self.center,True)
+        try:
+            self.main_menu_background = image.Image(self.resource_manager.load_image(self.main_menu_config["background"][5:]),None,[0,0],[1,1],"fill",self.center,True)
+        except:
+            print("加载背景图片失败")
         self.ugc_ui_manager.set_root(self.main_menu_ui)
         if self.in_dialog_game:
             self.start_dialog_game()
@@ -67,7 +70,10 @@ class Engine:
         #self.fullscreen()
         self.fps_font = pygame.font.Font("fonts/default.ttf", 24)
         if not self.in_dialog_game:
-            self.main_menu_bgm.play(loops=-1)
+            try:
+                self.main_menu_bgm.play(loops=-1)
+            except:
+                pass
         # 游戏主循环
         while self.running:
             for event in pygame.event.get():
@@ -111,7 +117,10 @@ class Engine:
             self.screen.fill((0,0,0))
             self.scene.update()
             if not self.in_dialog_game:
-                self.main_menu_background.draw(self.screen)
+                try:
+                    self.main_menu_background.draw(self.screen)
+                except:
+                    pass
             self.scene.draw(self.screen)
             self.cfg_decoder.update_wait()
             self.dialog_table.update(delta_time)
