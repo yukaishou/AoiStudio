@@ -19,7 +19,6 @@ def count_py_lines(folder_path: str):
                     print(f"读取失败 {file_path}, 错误: {e}")
     print(f"\n===== 总计有效行数（去除空行）：{total_lines}")
     return total_lines
-# 测试能不能上传代码
 if __name__ == "__main__":
     # 修改这里为你的目标文件夹路径
     target_folder = r"engine_src"
