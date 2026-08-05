@@ -1,0 +1,77 @@
+{
+  "name": "MainMenu",
+  "elements": [
+    {
+      "type": "UIText",
+      "id": "title",
+      "properties": {
+        "text": "AoiStudioTest",
+        "x": 50,
+        "y": 120,
+        "size": 48,
+        "color": [255, 215, 0],
+        "font_path": "fonts/default.ttf"
+      }
+    },
+    {
+      "type": "UIButton",
+      "id": "start_button",
+      "properties": {
+        "text": "新的游戏",
+        "x": 50,
+        "y": 260,
+        "width": 250,
+        "height": 100,
+        "font_path": "fonts/default.ttf"
+      },
+      "events": {
+        "on_click": "on_start_new_game"
+      }
+    },
+    {
+      "type": "UIButton",
+      "id": "start_button",
+      "properties": {
+        "text": "继续游戏",
+        "x": 50,
+        "y": 380,
+        "width": 250,
+        "height": 100,
+        "font_path": "fonts/default.ttf"
+      },
+      "events": {
+        "on_click": "on_load_game"
+      }
+    },
+    {
+      "type": "UIButton",
+      "id": "settings_button",
+      "properties": {
+        "text": "设置",
+        "x": 50,
+        "y": 500,
+        "width": 250,
+        "height": 100,
+        "font_path": "fonts/default.ttf"
+      },
+      "events": {
+        "on_click": "on_open_settings"
+      }
+    },
+    {
+      "type": "UIButton",
+      "id": "quit_button",
+      "properties": {
+        "text": "退出游戏",
+        "x": 50,
+        "y": 620,
+        "width": 250,
+        "height": 100,
+        "font_path": "fonts/default.ttf"
+      },
+      "events": {
+        "on_click": "on_quit_game"
+      }
+    }
+  ]
+}

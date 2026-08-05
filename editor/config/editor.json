@@ -1,0 +1,10 @@
+{
+    "version": {
+        "editor_ui": "SourcePreview",
+        "player": "v0.1.2-internal",
+        "abt": "v1.0-internal"
+    },
+    "platform": {
+        "name": "Windows"
+    }
+}
