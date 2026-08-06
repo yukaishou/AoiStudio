@@ -2,7 +2,7 @@ import pygame
 from .ui_element import UIElement
 
 class UIButton(UIElement):
-    def __init__(self, text, x, y, width, height, callback=None, font_path=None,anchor="center",engine = None):
+    def __init__(self, text, x, y, width, height, hit_sound_path=None, callback=None, font_path=None,anchor="center",engine = None):
         super().__init__(x, y, width, height, anchor, engine)
         self.text = text
         self.callback = callback
@@ -17,6 +17,16 @@ class UIButton(UIElement):
             print(f"加载按钮字体失败: {e}")
             pygame.font.init()
             self.font = pygame.font.Font(None, 24)
+        # 加载点击音效
+        try:
+            if hit_sound_path:
+                self.click_sound = self.engine.resource_manager.load_sound(hit_sound_path)
+                print("加载按钮点击音效成功")
+            else:
+                self.click_sound = None
+                print("没有按钮点击音效")
+        except Exception as e:
+            print(f"加载按钮点击音效失败: {e}")
         self.hovered = False
 
     def handle_event(self, event):
@@ -24,11 +34,13 @@ class UIButton(UIElement):
             self.hovered = self.rect.collidepoint(event.pos)
         if event.type == pygame.MOUSEBUTTONDOWN and self.hovered:
             if self.callback:
+                if self.click_sound:
+                    self.click_sound.play()
                 self.callback()
 
     def draw(self, surface):
-        color = (100, 100, 255) if self.hovered else (70, 70, 200)
-        pygame.draw.rect(surface, color, self.rect, border_radius=5)
+        color = (50, 50, 50) if self.hovered else (100, 100, 100)
+        pygame.draw.rect(surface, color, self.rect, border_radius=10)
         text_surf = self.font.render(self.text, True, (255, 255, 255))
         text_rect = text_surf.get_rect(center=self.rect.center)
         surface.blit(text_surf, text_rect)
@@ -115,3 +127,12 @@ class UIText(UIElement):
     def draw(self, surface):
         surf = self.font.render(self.text, True, self.color)
         surface.blit(surf, self.rect.topleft)
+
+class UIRect(UIElement):
+    def __init__(self, x, y, width, height, color=(255, 255, 255),border_radius=0, anchor="center",engine= None):
+        super().__init__(x, y, width, height, anchor, engine)
+        self.color = color
+        self.rect = pygame.Rect(x, y, width, height)
+        self.border_radius = border_radius
+    def draw(self, surface):
+        pygame.draw.rect(surface, self.color, self.rect, border_radius=self.border_radius)

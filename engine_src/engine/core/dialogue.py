@@ -126,8 +126,9 @@ class Dialogue:
             "bgm": now_bgm,
             "index": self.current_dialogue_index
         })
-        self.engine.dialog_backlog.history = self.history_text
-        self.engine.dialog_backlog._calc_scroll_limit()
+        #self.engine.dialog_backlog.set_log = self.history_text
+        #self.engine.dialog_backlog._calc_scroll_limit()
+        self.engine.dialog_backlog.add_log(self.history_text[-1])
 
         # 加载文本与说话人
         self.engine.dialog_table.load_text(current_node.get("text", ""))

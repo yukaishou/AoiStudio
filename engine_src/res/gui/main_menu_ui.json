@@ -23,7 +23,8 @@
         "y": 260,
         "width": 250,
         "height": 100,
-        "font_path": "fonts/default.ttf"
+        "font_path": "fonts/default.ttf",
+        "hit_sound_path": "sounds/button_touch.wav"
       },
       "events": {
         "on_click": "on_start_new_game"
@@ -38,7 +39,8 @@
         "y": 380,
         "width": 250,
         "height": 100,
-        "font_path": "fonts/default.ttf"
+        "font_path": "fonts/default.ttf",
+        "hit_sound_path": "sounds/button_touch.wav"
       },
       "events": {
         "on_click": "on_load_game"
@@ -72,6 +74,18 @@
       },
       "events": {
         "on_click": "on_quit_game"
+      }
+    },
+    {
+      "type": "UIRect",
+      "id": "test",
+      "properties": {
+        "x": 400,
+        "y": 620,
+        "width": 200,
+        "height": 100,
+        "color": [75,75,75],
+        "border_radius": 15
       }
     }
   ]

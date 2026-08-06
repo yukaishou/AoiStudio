@@ -23,7 +23,7 @@ class GalDialogBox:
         self.dialogue_system = dialogue_system
 
         # ===================== 外观配置 =====================
-        self.bg_color = (0, 0, 0)          # 背景黑色
+        self.bg_color = (25, 25, 25)          # 背景黑色
         self.border_color = (120, 120, 120)# 边框颜色
         self.border_width = 2               # 边框粗细
         self.alpha = 230                    # 整体透明度 0~255
@@ -204,11 +204,11 @@ class GalDialogBox:
         bg_rgba = (*self.bg_color, self.alpha)
         pygame.draw.rect(dialog_surface, bg_rgba, dialog_surface.get_rect(), border_radius=6)
         # 边框
-        if self.border_width > 0:
-            pygame.draw.rect(
-                dialog_surface, self.border_color,
-                dialog_surface.get_rect(), width=self.border_width, border_radius=6
-            )
+        #if self.border_width > 0:
+        #    pygame.draw.rect(
+        #        dialog_surface, self.border_color,
+        #        dialog_surface.get_rect(), width=self.border_width, border_radius=6
+        #    )
 
         # 绘制角色名称
         offset_y = self.padding[1]

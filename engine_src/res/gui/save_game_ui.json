@@ -1,0 +1,454 @@
+{
+  "name": "SaveLoadMenu",
+  "elements": [
+    {
+      "type": "UIRect",
+      "id": "bg_panel",
+      "properties": {
+        "x": 80,
+        "y": 60,
+        "width": 840,
+        "height": 580,
+        "color": [22, 24, 32],
+        "border_radius": 16
+      }
+    },
+    {
+      "type": "UIText",
+      "id": "title_text",
+      "properties": {
+        "text": "读取存档",
+        "x": 100,
+        "y": 80,
+        "size": 36,
+        "color": [255, 220, 100],
+        "font_path": "fonts/default.ttf"
+      }
+    },
+
+    {
+      "type": "UIButton",
+      "id": "slot_btn_0",
+      "properties": {
+        "text": "",
+        "x": 100,
+        "y": 140,
+        "width": 220,
+        "height": 180,
+        "font_path": "fonts/default.ttf",
+        "hit_sound_path": "sounds/button_touch.wav"
+      },
+      "events": {
+        "on_click": "on_slot_click_0"
+      }
+    },
+    {
+      "type": "UIRect",
+      "id": "slot_bg_0",
+      "properties": {
+        "x": 102,
+        "y": 142,
+        "width": 216,
+        "height": 176,
+        "color": [45, 48, 60],
+        "border_radius": 12
+      }
+    },
+    {
+      "type": "UIText",
+      "id": "slot0_title",
+      "properties": {
+        "text": "存档 01",
+        "x": 115,
+        "y": 155,
+        "size": 22,
+        "color": [240, 240, 240],
+        "font_path": "fonts/default.ttf"
+      }
+    },
+    {
+      "type": "UIText",
+      "id": "slot0_char",
+      "properties": {
+        "text": "——空存档——",
+        "x": 115,
+        "y": 190,
+        "size": 18,
+        "color": [160, 160, 160],
+        "font_path": "fonts/default.ttf"
+      }
+    },
+    {
+      "type": "UIText",
+      "id": "slot0_time",
+      "properties": {
+        "text": "",
+        "x": 115,
+        "y": 220,
+        "size": 16,
+        "color": [130, 130, 130],
+        "font_path": "fonts/default.ttf"
+      }
+    },
+
+    {
+      "type": "UIButton",
+      "id": "slot_btn_1",
+      "properties": {
+        "text": "",
+        "x": 340,
+        "y": 140,
+        "width": 220,
+        "height": 180,
+        "font_path": "fonts/default.ttf",
+        "hit_sound_path": "sounds/button_touch.wav"
+      },
+      "events": {
+        "on_click": "on_slot_click_1"
+      }
+    },
+    {
+      "type": "UIRect",
+      "id": "slot_bg_1",
+      "properties": {
+        "x": 342,
+        "y": 142,
+        "width": 216,
+        "height": 176,
+        "color": [45, 48, 60],
+        "border_radius": 12
+      }
+    },
+    {
+      "type": "UIText",
+      "id": "slot1_title",
+      "properties": {
+        "text": "存档 02",
+        "x": 355,
+        "y": 155,
+        "size": 22,
+        "color": [240, 240, 240],
+        "font_path": "fonts/default.ttf"
+      }
+    },
+    {
+      "type": "UIText",
+      "id": "slot1_char",
+      "properties": {
+        "text": "——空存档——",
+        "x": 355,
+        "y": 190,
+        "size": 18,
+        "color": [160, 160, 160],
+        "font_path": "fonts/default.ttf"
+      }
+    },
+    {
+      "type": "UIText",
+      "id": "slot1_time",
+      "properties": {
+        "text": "",
+        "x": 355,
+        "y": 220,
+        "size": 16,
+        "color": [130, 130, 130],
+        "font_path": "fonts/default.ttf"
+      }
+    },
+
+    {
+      "type": "UIButton",
+      "id": "slot_btn_2",
+      "properties": {
+        "text": "",
+        "x": 580,
+        "y": 140,
+        "width": 220,
+        "height": 180,
+        "font_path": "fonts/default.ttf",
+        "hit_sound_path": "sounds/button_touch.wav"
+      },
+      "events": {
+        "on_click": "on_slot_click_2"
+      }
+    },
+    {
+      "type": "UIRect",
+      "id": "slot_bg_2",
+      "properties": {
+        "x": 582,
+        "y": 142,
+        "width": 216,
+        "height": 176,
+        "color": [45, 48, 60],
+        "border_radius": 12
+      }
+    },
+    {
+      "type": "UIText",
+      "id": "slot2_title",
+      "properties": {
+        "text": "存档 03",
+        "x": 595,
+        "y": 155,
+        "size": 22,
+        "color": [240, 240, 240],
+        "font_path": "fonts/default.ttf"
+      }
+    },
+    {
+      "type": "UIText",
+      "id": "slot2_char",
+      "properties": {
+        "text": "——空存档——",
+        "x": 595,
+        "y": 190,
+        "size": 18,
+        "color": [160, 160, 160],
+        "font_path": "fonts/default.ttf"
+      }
+    },
+    {
+      "type": "UIText",
+      "id": "slot2_time",
+      "properties": {
+        "text": "",
+        "x": 595,
+        "y": 220,
+        "size": 16,
+        "color": [130, 130, 130],
+        "font_path": "fonts/default.ttf"
+      }
+    },
+
+    {
+      "type": "UIButton",
+      "id": "slot_btn_3",
+      "properties": {
+        "text": "",
+        "x": 100,
+        "y": 340,
+        "width": 220,
+        "height": 180,
+        "font_path": "fonts/default.ttf",
+        "hit_sound_path": "sounds/button_touch.wav"
+      },
+      "events": {
+        "on_click": "on_slot_click_3"
+      }
+    },
+    {
+      "type": "UIRect",
+      "id": "slot_bg_3",
+      "properties": {
+        "x": 102,
+        "y": 342,
+        "width": 216,
+        "height": 176,
+        "color": [45, 48, 60],
+        "border_radius": 12
+      }
+    },
+    {
+      "type": "UIText",
+      "id": "slot3_title",
+      "properties": {
+        "text": "存档 04",
+        "x": 115,
+        "y": 355,
+        "size": 22,
+        "color": [240, 240, 240],
+        "font_path": "fonts/default.ttf"
+      }
+    },
+    {
+      "type": "UIText",
+      "id": "slot3_char",
+      "properties": {
+        "text": "——空存档——",
+        "x": 115,
+        "y": 390,
+        "size": 18,
+        "color": [160, 160, 160],
+        "font_path": "fonts/default.ttf"
+      }
+    },
+    {
+      "type": "UIText",
+      "id": "slot3_time",
+      "properties": {
+        "text": "",
+        "x": 115,
+        "y": 420,
+        "size": 16,
+        "color": [130, 130, 130],
+        "font_path": "fonts/default.ttf"
+      }
+    },
+
+    {
+      "type": "UIButton",
+      "id": "slot_btn_4",
+      "properties": {
+        "text": "",
+        "x": 340,
+        "y": 340,
+        "width": 220,
+        "height": 180,
+        "font_path": "fonts/default.ttf",
+        "hit_sound_path": "sounds/button_touch.wav"
+      },
+      "events": {
+        "on_click": "on_slot_click_4"
+      }
+    },
+    {
+      "type": "UIRect",
+      "id": "slot_bg_4",
+      "properties": {
+        "x": 342,
+        "y": 342,
+        "width": 216,
+        "height": 176,
+        "color": [45, 48, 60],
+        "border_radius": 12
+      }
+    },
+    {
+      "type": "UIText",
+      "id": "slot4_title",
+      "properties": {
+        "text": "存档 05",
+        "x": 355,
+        "y": 355,
+        "size": 22,
+        "color": [240, 240, 240],
+        "font_path": "fonts/default.ttf"
+      }
+    },
+    {
+      "type": "UIText",
+      "id": "slot4_char",
+      "properties": {
+        "text": "——空存档——",
+        "x": 355,
+        "y": 390,
+        "size": 18,
+        "color": [160, 160, 160],
+        "font_path": "fonts/default.ttf"
+      }
+    },
+    {
+      "type": "UIText",
+      "id": "slot4_time",
+      "properties": {
+        "text": "",
+        "x": 355,
+        "y": 420,
+        "size": 16,
+        "color": [130, 130, 130],
+        "font_path": "fonts/default.ttf"
+      }
+    },
+
+
+    {
+      "type": "UIButton",
+      "id": "slot_btn_5",
+      "properties": {
+        "text": "",
+        "x": 580,
+        "y": 340,
+        "width": 220,
+        "height": 180,
+        "font_path": "fonts/default.ttf",
+        "hit_sound_path": "sounds/button_touch.wav"
+      },
+      "events": {
+        "on_click": "on_slot_click_5"
+      }
+    },
+    {
+      "type": "UIRect",
+      "id": "slot_bg_5",
+      "properties": {
+        "x": 582,
+        "y": 342,
+        "width": 216,
+        "height": 176,
+        "color": [45, 48, 60],
+        "border_radius": 12
+      }
+    },
+    {
+      "type": "UIText",
+      "id": "slot5_title",
+      "properties": {
+        "text": "存档 06",
+        "x": 595,
+        "y": 355,
+        "size": 22,
+        "color": [240, 240, 240],
+        "font_path": "fonts/default.ttf"
+      }
+    },
+    {
+      "type": "UIText",
+      "id": "slot5_char",
+      "properties": {
+        "text": "——空存档——",
+        "x": 595,
+        "y": 390,
+        "size": 18,
+        "color": [160, 160, 160],
+        "font_path": "fonts/default.ttf"
+      }
+    },
+    {
+      "type": "UIText",
+      "id": "slot5_time",
+      "properties": {
+        "text": "",
+        "x": 595,
+        "y": 420,
+        "size": 16,
+        "color": [130, 130, 130],
+        "font_path": "fonts/default.ttf"
+      }
+    },
+
+
+    {
+      "type": "UIButton",
+      "id": "btn_load",
+      "properties": {
+        "text": "读取存档",
+        "x": 120,
+        "y": 540,
+        "width": 240,
+        "height": 70,
+        "font_path": "fonts/default.ttf",
+        "hit_sound_path": "sounds/button_touch.wav"
+      },
+      "events": {
+        "on_click": "on_load_selected_save"
+      }
+    },
+    {
+      "type": "UIButton",
+      "id": "btn_cancel",
+      "properties": {
+        "text": "返回",
+        "x": 640,
+        "y": 540,
+        "width": 240,
+        "height": 70,
+        "font_path": "fonts/default.ttf",
+        "hit_sound_path": "sounds/button_touch.wav"
+      },
+      "events": {
+        "on_click": "on_close_save_load"
+      }
+    }
+  ]
+}

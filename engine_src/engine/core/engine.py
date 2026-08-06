@@ -38,6 +38,7 @@ class Engine:
         self.clock = pygame.time.Clock()
         self.clock.tick(self.fps)
         self.is_full_screen = False
+        self.is_looking_backtext = False
 
         # 初始化模块
         self.dpi = dpi_tool.DPITool(self.game_size, pygame.display.list_modes()[0])
@@ -81,7 +82,7 @@ class Engine:
                     sys.exit(0)
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     # 处理鼠标点击事件
-                    if self.in_dialog_game:
+                    if self.in_dialog_game and not self.is_looking_backtext:
                         self.dialog_choice.handle_click()
                         pos = pygame.mouse.get_pos()
                         # logical_x = pos[0] * (self.game_size[0] / self.screen.get_width())
@@ -92,6 +93,8 @@ class Engine:
                             if has_next:
                                 self.dialog.on_text_complete()
                                 self.dialog.on_next()
+                            else:
+                                self.dialog.on_text_complete()
 
                 if event.type == pygame.KEYDOWN:
                     # 全屏
@@ -108,7 +111,9 @@ class Engine:
                         self.save_game.load_game("test_save_game.save")
                     if event.key == pygame.K_b:
                         if self.in_dialog_game:
+                            self.is_looking_backtext = not self.is_looking_backtext
                             self.dialog_backlog.active = not self.dialog_backlog.active
+
                 self.dialog_backlog.handle_event(event)
                 self.ugc_ui_manager.handle_event(event)
 
@@ -123,8 +128,9 @@ class Engine:
                     pass
             self.scene.draw(self.screen)
             self.cfg_decoder.update_wait()
-            self.dialog_table.update(delta_time)
-            self.dialog_choice.update()
+            if not self.is_looking_backtext:
+                self.dialog_table.update(delta_time)
+                self.dialog_choice.update()
             self.ugc_ui_manager.draw(self.screen)
             if self.in_dialog_game:
                 self.dialog_table.render()
@@ -195,5 +201,8 @@ class Engine:
 
     def on_back_main_menu(self):
         self.ugc_ui_manager.set_root(self.main_menu_ui)
+
+    def on_load_game(self):
+        self.ugc_ui_manager.set_root(self.save_game_ui)
 
 
