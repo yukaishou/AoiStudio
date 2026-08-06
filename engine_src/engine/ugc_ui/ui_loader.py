@@ -54,7 +54,8 @@ class UILoader:
                     hit_sound_path=props.get("hit_sound_path",None),
                     callback=lambda: self._handle_callback(config.get("events", {}).get("on_click")),
                     font_path=props.get("font_path"),
-                    engine = self.engine
+                    engine = self.engine,
+                    anchor = props.get("anchor","topleft")
                 )
                 
             elif element_type == "UIText":
@@ -66,7 +67,8 @@ class UILoader:
                     size=props.get("size", 24),
                     color=(color[0], color[1], color[2]),
                     font_path=props.get("font_path"),
-                    engine = self.engine
+                    engine = self.engine,
+                    anchor = props.get("anchor","topleft")
                 )
                 
             elif element_type == "UIImage":
@@ -77,7 +79,8 @@ class UILoader:
                     width=props["width"],
                     height=props["height"],
                     size_mode=props["size_mode"],
-                    engine = self.engine
+                    engine = self.engine,
+                    anchor = props.get("anchor","topleft")
                 )
             elif element_type == "UIRect":
                 return UIRect(
@@ -88,6 +91,7 @@ class UILoader:
                     height=props["height"],
                     engine = self.engine,
                     border_radius=props.get("border_radius", 0),
+                    anchor = props.get("anchor","topleft")
                 )
             else:
                 print(f"未知的UI元素类型: {element_type}")

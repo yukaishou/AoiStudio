@@ -1,7 +1,6 @@
 {
   "name": "MainMenu",
   "elements": [
-
     {
       "type": "UIText",
       "id": "title",

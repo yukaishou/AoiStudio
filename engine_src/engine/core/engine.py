@@ -32,6 +32,7 @@ class Engine:
         self.screen = pygame.display.set_mode(game_size,pygame.HWSURFACE | pygame.DOUBLEBUF | pygame.SCALED)
         pygame.display.set_caption(game_title)
         pygame.display.set_icon(pygame.image.load("icons/AppIcon.png"))
+        # 游戏状态
         self.running = True
         self.in_dialog_game = False
         self.fps = 60
@@ -39,10 +40,11 @@ class Engine:
         self.clock.tick(self.fps)
         self.is_full_screen = False
         self.is_looking_backtext = False
+        self.save_game_ui_selected_solt = 0
 
         # 初始化模块
         self.dpi = dpi_tool.DPITool(self.game_size, pygame.display.list_modes()[0])
-        self.save_game = save_game.SaveGame(self)
+        self.save_game_system = save_game.SaveGame(self)
         self.resource_manager = resource.AssetManager(self)
         self.scene = scene_manager.Scene(self)
         self.dialog = dialogue.Dialogue(self)
@@ -103,12 +105,12 @@ class Engine:
 
                     # 测试用，保存游戏,读取游戏
                     if event.key == pygame.K_s:
-                        self.save_game.save_game("test_save_game.save")
+                        self.save_game_system.save_game("test_save_game.save")
                     if event.key == pygame.K_l:
                         if not self.in_dialog_game:
                             self.in_dialog_game  = True
                             self.ugc_ui_manager.clear_ui()
-                        self.save_game.load_game("test_save_game.save")
+                        self.save_game_system.load_game("test_save_game.save")
                     if event.key == pygame.K_b:
                         if self.in_dialog_game:
                             self.is_looking_backtext = not self.is_looking_backtext
@@ -149,12 +151,15 @@ class Engine:
             if first_start_dialog_config["startFrom"].startswith("file:"):
                 start_from_path = first_start_dialog_config["startFrom"][5:]
                 self.dialog.load_dialogue(start_from_path)
+            elif first_start_dialog_config["startFrom"].startswith("id:"):
+                start_from_path = self.id_index_map[first_start_dialog_config["startFrom"][3:]]
+                self.dialog.load_dialogue(start_from_path)
             if first_start_dialog_config["startBG"].startswith("file:"):
                 start_bg = first_start_dialog_config["startBG"][5:]
                 self.scene.add_background(start_bg)
             self.dialog.start_dialogue()
         else:
-            self.save_game_ui.load_game(save_path)
+            self.save_game_system.load_game(save_path)
 
     def fullscreen(self):
         if pygame.display.is_fullscreen():
@@ -190,6 +195,8 @@ class Engine:
         else:
             return self.game_size
 
+    # 以下为UI事件回调
+
     def on_quit_game(self):
         self.quit()
 
@@ -205,4 +212,26 @@ class Engine:
     def on_load_game(self):
         self.ugc_ui_manager.set_root(self.save_game_ui)
 
+    def on_close_save_load(self):
+        self.ugc_ui_manager.set_root(self.main_menu_ui)
 
+    def on_load_selected_save(self):
+        self.start_dialog_game(True, self.save_game_system.get_solt_path(self.save_game_ui_selected_solt))
+
+    def on_slot_click_0(self):
+        self.save_game_ui_selected_solt = 0
+
+    def on_slot_click_1(self):
+        self.save_game_ui_selected_solt = 1
+
+    def on_slot_click_2(self):
+        self.save_game_ui_selected_solt = 2
+
+    def on_slot_click_3(self):
+        self.save_game_ui_selected_solt = 3
+
+    def on_slot_click_4(self):
+        self.save_game_ui_selected_solt = 4
+
+    def on_slot_click_5(self):
+        self.save_game_ui_selected_solt = 5
