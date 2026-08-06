@@ -1,12 +1,18 @@
 这是一个AVG游戏引擎，用的Python+pygame+pyqt5做的。其中pygame用作引擎核心，pyqt5用做编辑器
+注意！.cfg文件是演出脚本文件
+注意！.cfg文件是演出脚本文件
+注意！.cfg文件是演出脚本文件
+重要的事情说三遍！！！！！！！！！！！！！
 
 如何开始？
+#安装开发环境
 先安装python：https://www.python.org/downloads/windows/
 打开链接后找3.8以上的Download Windows Installer
 根据系统选择指令集
 下载完后打开exe，把下面的两个勾打上，然后点击Install Now
 安装完后打开命令行（Win+r 输入cmd）,然后输入pip install -r 把项目中的Libs.txt拖到这，然后再按回车，等待一会就安装好了，如果太慢的话可以加上-i https://pypi.tuna.tsinghua.edu.cn/simple
 等待一会环境就安装好啦
+#实操
 打开核心：
     打开engine_src，在里面找到main.py，打开它
     此时你可以看到一个几乎全黑的窗口，左上角有FPS显示，和一个有点简陋的主菜单UI界面
