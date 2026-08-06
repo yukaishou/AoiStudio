@@ -18,7 +18,7 @@ FADE_OUT_DURATION_2 = 0.8
 
 LOGO_PATH = "icons/Engine.png"    # 第一张Logo
 LOGO2_PATH = "icons/GameComponyLogo.png"    # 第二张Logo（新增）
-BACKGROUND_COLOR = (0,0,0)        # 黑背景
+BACKGROUND_COLOR = (100,100,100)        # 灰色背景
 TEXT_CONTENT = "Made With AoiStudio"
 TEXT_COLOR = (255, 255, 255)
 TEXT_FONT_SIZE = 64
@@ -33,6 +33,7 @@ STATE_FADE_OUT_2 = 5   # 新增：第二张图淡出
 STATE_FINISHED = 6
 
 def main(size,game_name,show_logo2,show_logo1):
+    global BACKGROUND_COLOR, current_logo
     pygame.init()
     SCREEN_HEIGHT = size[1]
     SCREEN_WIDTH = size[0]
@@ -131,6 +132,7 @@ def main(size,game_name,show_logo2,show_logo1):
 
         # 新增：第二张图淡入
         elif anim_state == STATE_FADE_IN_2:
+            BACKGROUND_COLOR = (0,0,0)
             logo_rect = logo2_img.get_rect(center=(SCREEN_WIDTH//2, SCREEN_HEIGHT//2))
             progress = timer / FADE_IN_DURATION_2
             alpha = min(255, int(255 * progress))

@@ -1,0 +1,41 @@
+editor/
+-editor_main.py #编辑器入口
+-editor_dialog.py #剧本/对话编辑标签页
+-editor_script.py #脚本编辑标签页
+-editor_project_settings.py #项目设置窗口
+-tool_id_builder.py #对话索引构建
+-package/ #打包工具
+--os_tools/ #根据名字就可以看出作用
+--AoiStudioBuildTool.py #ABT源码
+--assets_bundle_package_build.py #打pak包工具
+engine_src/
+-main.py #核心入口
+-engine/
+--core/
+---engine.py #核心
+---image.py #图片封装
+---save_game.py #存档系统
+---scene_manager.py #场景管理
+---dialogue.py #对话系统
+---cfg_decoder.py #cfg脚本解析
+---base_sound.py #音效封装
+---base_background.py #背景类
+---base_character.py #角色类
+--resource/
+---asset_bundle.py #包管理系统
+---resource.py #资源管理
+--ugc_ui/
+---ui_manager.py #自定义UI管理器
+---ui_loader.py #自定义UI加载器
+---ui_element.py #自定义UI基类
+---ui_components.py #自定义UI的组件
+--ui/
+---dialog_table.py #游戏中的对话框
+---dialog_choice.py #游戏中的选择框
+---dialog_backtext.py #游戏中文本回溯
+--utils/
+---dpi_tool.py #DPI适配工具（弃用）
+---smooth_tween.py #顺滑插值工具
+-splash_screen.py #开始屏幕
+common/
+-AoiStudioCrasher.py #引擎崩溃的错误抛出窗口
