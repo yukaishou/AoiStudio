@@ -2,10 +2,9 @@ import os
 from datetime import datetime
 
 import pygame
-from tkinter import messagebox
 from engine_src.engine.core import engine
 from engine_src.engine import splash_screen
-from engine_src import AoiStudioCrasher
+from common import AoiStudioCrasher
 import json
 import traceback
 import platform

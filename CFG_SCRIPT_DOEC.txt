@@ -1,0 +1,107 @@
+命令列表
+命令                作用
+add       添加对象（角色、背景、标记 flag）
+move      移动角色，支持缓动动画
+animation 执行角色动画（淡入淡出、缩放、抖动、跳跃、闪烁）
+switch    切换背景、BGM、角色立绘
+affection 角色好感度控制
+wait      等待若干秒（非阻塞）
+jump      剧本跳转，跳转外部剧本 / 当前剧本指定行
+quit      退出程序
+
+如何使用?
+
+add
+添加游戏对象：add <type> [参数...]
+
+1.添加角色
+add character file:角色图片路径 x y
+file:chara.png：资源路径，file: 前缀读取资源
+x：X 坐标（浮点数）
+y：Y 坐标（浮点数）
+
+2.添加场景（仅作为调试图层使用）
+add background file:图片路径
+file:chara.png：资源路径，file: 前缀读取资源
+
+3.添加flag标记
+flag标记用来标记玩家是否达成了某种条件或者对话/选项
+但注意！不建议用flag来做好感的差异和渐进形式的剧本，不然你也不想看到存杜一万个flags吧/OoO\
+add flag flag名字
+
+move 移动角色，带动画缓动
+
+move character <索引> <x> <y> <缓动类型> <速度/时间>
+
+character：当前仅支持移动角色
+<索引>：场景内角色下标，从 0 开始
+x y：目标坐标
+<缓动类型>：传递给 tween 系统，如 linear、ease_in、ease_out
+<速度/时长>：linear用速度，其他用时间，单位秒
+
+animation 角色动画
+animation character <索引> <动画名> [附加参数...]
+
+fade_to 透明度变化
+animation character 0 fade_to 0.4 2.0
+
+scale_to 缩放
+animation character 0 scale_to 800 600 1.5
+
+shake 抖动
+animation character 0 shake 12 0.8
+
+jump 跳跃
+animation character 0 jump 80 1.0
+
+start_blink 开启闪烁
+animation character 0 start_blink 0.35
+
+stop_blink 关闭闪烁
+animation character 0 stop_blink
+
+switch 切换资源：背景、BGM、角色立绘
+
+切换背景（如果当前场景没有任何背景，那么就是直接显示，没有淡出淡入效果）
+switch background file:bg_night.png <过渡方式> <时长>
+
+切换 BGM
+switch bgm file:bgm_sad.ogg <淡入时长>
+
+切换角色立绘
+switch character <角色索引> unused file:new_sprite.png <淡入时长> <缩放时长>
+第二个参数为占位，保留语法，填任意值即可
+
+affection 好感度控制
+
+affection <角色名> add|reduce|set <数值>
+add：增加好感
+reduce：减少好感
+set：直接设置为指定值
+
+wait 非阻塞等待，不会卡死游戏，等待结束后继续执行下一条 CFG 指令
+wait <秒数>
+注意：不要写 wait 0 做帧等待；负数时间无效
+
+remove 移除对象
+
+移除场景角色
+remove character <索引>
+
+移除 flag 标记
+remove flag met_girl
+
+jump 剧本跳转，跳转到外部剧本文件（id 索引模式，推荐编辑器导出）
+
+jump dialogue_file id:dialog_001 或 jump dialogue_file file:剧本/对话文件路经
+id:xxx 使用 tool_id_builder 生成的 id 索引，避免硬编码文件路径。
+
+跳转到当前剧本的指定对话行索引
+jump dialogue_index 5
+
+quit 退出程序
+
+可扩展
+代码支持自定义注册指令：
+cfg_decoder.register("mycmd", my_func)
+脚本内就可以直接调用 mycmd arg1 arg2

@@ -11,13 +11,14 @@ from PyQt5.QtCore import (Qt, QMimeData, QPoint,
                           QDir, QFileInfo, QUrl)
 from PyQt5.QtGui import QIcon, QPixmap
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
-from engine_src import AoiStudioCrasher
+from common import AoiStudioCrasher
 import json
 import editor_dialog
 import editor_script
 import editor_project_settings
 import tool_id_builder
 import zipfile
+
 
 def ms_to_time(ms):
     """毫秒转为 00:00 格式"""
