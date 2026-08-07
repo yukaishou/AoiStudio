@@ -1,3 +1,6 @@
+import os
+import shutil
+
 import pygame
 import json
 import sys
@@ -13,6 +16,7 @@ from engine_src.engine.core import save_game
 from engine_src.engine.ui import dialog_backtext
 from engine_src.engine.ugc_ui import ui_manager
 from engine_src.engine.ugc_ui import ui_loader
+from engine_src.engine.plugin import plugin_manager
 
 class Engine:
     def __init__(self,game_title,game_size):
@@ -49,6 +53,7 @@ class Engine:
         self.scene = scene_manager.Scene(self)
         self.dialog = dialogue.Dialogue(self)
         self.cfg_decoder = cfg_decoder.CFGDecoder(self)
+
         # 初始化 UI
         self.ugc_ui_manager = ui_manager.UIManager(self.game_size)
         self.dialog_table = dialog_table.GalDialogBox(self.screen,40,game_size[1]-180,game_size[0]-80,160,self.dialog)
@@ -68,6 +73,9 @@ class Engine:
         self.ugc_ui_manager.set_root(self.main_menu_ui)
         if self.in_dialog_game:
             self.start_dialog_game()
+
+        # 插件系统初始化
+        self.plugin_manager = plugin_manager.PluginManager(self)
         
     def run(self):
         #self.fullscreen()
@@ -77,6 +85,13 @@ class Engine:
                 self.main_menu_bgm.play(loops=-1)
             except:
                 pass
+        # 插件加载
+        if os.path.exists("plugins"):
+            for root,dirs,files in os.walk("plugins"):
+                for file in files:
+                    if file.endswith(".aoi"):
+                        self.plugin_manager.load_plugin(os.path.join(root,file))
+        self.plugin_manager.start()
         # 游戏主循环
         while self.running:
             for event in pygame.event.get():
@@ -138,6 +153,7 @@ class Engine:
                 self.dialog_table.render()
                 self.dialog_choice.render()
                 self.dialog_backlog.draw(self.screen)
+            self.plugin_manager.update()
             #文字为黄色
             self.screen.blit(self.fps_font.render("FPS: " + str(int(self.clock.get_fps())), True, (200, 200, 0)), (10, 10))
 
@@ -181,6 +197,7 @@ class Engine:
         pygame.display.toggle_fullscreen()
 
     def quit(self):
+        shutil.rmtree("plugins_runtime")
         self.running = False
 
     def get_center(self):
