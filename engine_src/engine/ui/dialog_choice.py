@@ -31,7 +31,7 @@ class GalChoiceUI:
         self.active = False
 
         # 面板全局样式
-        self.panel_bg = (0, 0, 0)
+        self.panel_bg = (25, 25, 25)
         self.panel_alpha = 220
         self.panel_x = 0
         self.panel_y = 0
@@ -40,8 +40,8 @@ class GalChoiceUI:
         self.panel_radius = 8
 
         # 选项样式
-        self.option_normal_color = (60, 60, 60)
-        self.option_hover_color = (90, 90, 90)
+        self.option_normal_color = (90, 90, 90)
+        self.option_hover_color = (60, 60, 60)
         self.option_text_color = (255, 255, 255)
         self.option_height = 40
         self.option_gap = 12

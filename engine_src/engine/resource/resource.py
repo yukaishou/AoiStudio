@@ -61,7 +61,7 @@ class AssetManager:
         managed_path, _ = self._get_asset_base_paths()
 
         # 尝试加载 .py 文件
-        py_path = os.path.join(managed_path, f"{path}.py")
+        py_path = f"{path}.py"
         # 尝试加载 .pyc 文件
         pyc_path = f"{py_path}c"
 

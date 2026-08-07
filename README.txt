@@ -21,7 +21,7 @@
 打开编辑器：
     打开ediotr，里面找到editor_main.py，打开它
     如果没有报ModuleNotFoundError错或者任何关于模块导入的错误，那说明你环境搭好了
-    但注意，编辑器的源码版本质上是LiteRelease版，你需要运行make_abt.py和make_engine.py这两个来获取aoi文件安装
+    但注意，编辑器的源码版本质上是Lite版，你需要运行make_abt.py和make_engine.py这两个来获取aoi文件安装
 打包/编译：
     编辑器：运行make_editor.py，生成在make_out/editor_output
     播放器：运行make_engine.py，生成在make_out/engine_output

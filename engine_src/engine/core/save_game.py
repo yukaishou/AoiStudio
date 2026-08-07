@@ -1,4 +1,5 @@
 import json
+import os
 from datetime import date
 
 class SaveGame:
@@ -45,6 +46,9 @@ class SaveGame:
             json.dump(save_game_data,f,ensure_ascii=False,indent=4)
 
     def load_game(self,path):
+        if not os.path.exists(path):
+            print("存档不存在")
+            return
         save_game_data = json.load(open(path,"r",encoding="utf-8"))
         for i in self.engine.scene.bgm:
             i.sound.stop()
@@ -61,3 +65,17 @@ class SaveGame:
         self.engine.dialog.history_text = save_game_data["history_text"]
         self.engine.scene.switch_bgm(save_game_data["scene"]["bgm"][5:],0.5)
         self.engine.dialog.start_dialogue(True)
+
+    def init_solt(self):
+        if not os.path.exists("saves"):
+            os.mkdir("saves")
+
+    def load_solt(self,solt_index):
+        self.load_game(f"saves/save_solt{solt_index}.json")
+
+    def save_solt(self,solt_index):
+        self.init_solt()
+        self.save_game(f"saves/save_solt{solt_index}.json")
+
+    def get_solt_path(self,solt_index):
+        return f"saves/save_solt{solt_index}.json"
