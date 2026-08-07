@@ -54,7 +54,8 @@
         "y": 500,
         "width": 250,
         "height": 100,
-        "font_path": "fonts/default.ttf"
+        "font_path": "fonts/default.ttf",
+        "hit_sound_path": "sounds/button_touch.wav"
       },
       "events": {
         "on_click": "on_open_settings"
@@ -69,7 +70,8 @@
         "y": 620,
         "width": 250,
         "height": 100,
-        "font_path": "fonts/default.ttf"
+        "font_path": "fonts/default.ttf",
+        "hit_sound_path": "sounds/button_touch.wav"
       },
       "events": {
         "on_click": "on_quit_game"
