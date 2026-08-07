@@ -96,7 +96,7 @@ class Engine:
         while self.running:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
-                    sys.exit(0)
+                    self.running = False
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     # 处理鼠标点击事件
                     if self.in_dialog_game and not self.is_looking_backtext:
@@ -197,8 +197,8 @@ class Engine:
         pygame.display.toggle_fullscreen()
 
     def quit(self):
-        shutil.rmtree("plugins_runtime")
         self.running = False
+
 
     def get_center(self):
         if self.is_full_screen:

@@ -34,7 +34,7 @@ class PluginManager:
             ).Plugin(
                 self.plugin_api,self.engine,information["name"]
             )
-            self.plugins.append(PluginObject(plugin_main,information))
+            self.plugins.append(PluginObject(plugin_main,information,self))
             print(f"插件{information['name']}加载成功")
 
     def start(self):
@@ -51,13 +51,24 @@ class PluginManager:
 
 
 class PluginObject:
-    def __init__(self,plugin_object,plugin_info):
+    def __init__(self,plugin_object,plugin_info,plugin_manager):
         self.plugin = plugin_object
         self.plugin_info = plugin_info
+        self.plugin_manager = plugin_manager
         self.plugin.on_game_load()
 
     def start(self):
-        self.plugin.on_game_start()
+        for i in self.plugin_manager.plugins:
+            self.rely_ons = self.plugin_info["rely_ons"]
+            if i in self.plugin_manager.plugins:
+                if i.plugin_info["name"] in self.rely_ons:
+                    self.rely_ons.remove(i.plugin_info["name"])
+        if len(self.rely_ons) == 0:
+            self.plugin.on_game_start()
+        else:
+            self.plugin_manager.plugins.remove(self)
+            print(f"插件{self.plugin_info['name']}的依赖插件：{self.rely_ons}未安装，因此无法启动并卸载")
+
 
     def update(self):
         self.plugin.on_game_update()
