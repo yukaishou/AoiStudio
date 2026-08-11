@@ -13,10 +13,10 @@ from PyQt5.QtGui import QIcon, QPixmap
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
 from common import AoiStudioCrasher
 import json
-import editor_dialog
-import editor_script
-import editor_project_settings
-import tool_id_builder
+from editor import editor_dialog
+from editor import editor_script
+from editor import editor_project_settings
+from editor import tool_id_builder
 import zipfile
 
 
@@ -691,6 +691,7 @@ class MainEditorWindow(QMainWindow):
                     self.setWindowTitle(
                         f"AoiStudio Editor {self.editor_config['platform']['name']} {self.editor_config['version']['editor_ui']} - {self.editor_config['version']['player']}")
                     QMessageBox.information(self,"安装扩展", "播放器安装成功")
+                    return
                 if file_info["type"] == "abt":
                     shutil.copyfile("temp/abt.exe", open("caches/build_tool_path.txt", "r", encoding="utf-8").read())
                     shutil.rmtree("temp")
@@ -699,12 +700,21 @@ class MainEditorWindow(QMainWindow):
                     with open("config/editor.json", "w", encoding="utf-8") as f:
                         json.dump(editor_config, f, indent=4)
                     QMessageBox.information(self ,"安装扩展", "ABT安装成功")
+                    return
+                if file_info["type"] == "plugin":
+                    if not self.is_opening_project:
+                        QMessageBox.warning(self, "错误", "安装插件请先打开项目")
+                        return
+                    plugin_info = json.load(open("temp/plugin_info.json", "r", encoding="utf-8"))
+                    shutil.copyfile(aoi_file_path,f"{self.project_path}/plugins/{plugin_info['name']}.aoi")
+                    QMessageBox.information(self, "安装扩展", "插件安装成功")
+                    return
+                QMessageBox.warning(self, "错误", "未知的扩展类型")
             except Exception as e:
                 traceback_ext = traceback.format_exc()
                 print(traceback_ext)
                 QMessageBox.warning(self, "错误", f"安装失败：{str(e)}")
 if __name__ == "__main__":
-
     try:
         app = QApplication([])
         win = MainEditorWindow()

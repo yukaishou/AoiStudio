@@ -1,7 +1,7 @@
 {
     "version": {
         "editor_ui": "SourcePreview",
-        "player": "v1.0.0-public",
+        "player": "v1.1.0-preview",
         "abt": "v1.0.0-public"
     },
     "platform": {

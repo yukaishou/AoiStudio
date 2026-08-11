@@ -30,10 +30,10 @@ if __name__ == "__main__":
                                game_config["show_made_with_engine"])
         game = engine.Engine(game_config["name"], game_window_size)
         game.run()
-        shutil.rmtree("plugins_runtime")
-    except Exception as e:
         if os.path.exists("plugins_runtime"):
             shutil.rmtree("plugins_runtime")
+    except Exception as e:
+
 
         # 安全退出引擎，game可能未实例化
         if game is not None:
@@ -69,4 +69,6 @@ Exception Traceback:
             pygame.quit()
         except Exception:
             pass
+    if os.path.exists("plugins_runtime"):
+        shutil.rmtree("plugins_runtime")
 

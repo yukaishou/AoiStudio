@@ -22,9 +22,9 @@ def build(output_dir):
 }
     with open(output_dir+"engine_output/info.json", "w" , encoding="utf-8") as f:
         json.dump(info_data, f, ensure_ascii=False, indent=4)
-    os.system(f"pyinstaller --onefile --icon=AoiStudio.png  --distpath={output_dir+'engine_output'} --name=player engine_src/main.py")
+    os.system(f"pyinstaller --onefile --icon=AoiStudio.png  --distpath={output_dir+'engine_output'} --name=debug_player engine_src/main.py")
     os.system(
-        f"pyinstaller --onefile --noconsole --icon=AoiStudio.png  --distpath={output_dir + 'engine_output'} --name=debug_player engine_src/main.py")
+        f"pyinstaller --onefile --noconsole --icon=AoiStudio.png  --distpath={output_dir + 'engine_output'} --name=player engine_src/main.py")
     with zipfile.ZipFile(output_dir+"engine_output/player.aoi", "w") as zip:
         zip.write(output_dir+"engine_output/player.exe", "player.exe")
         zip.write(output_dir+"engine_output/debug_player.exe", "debug_player.exe")

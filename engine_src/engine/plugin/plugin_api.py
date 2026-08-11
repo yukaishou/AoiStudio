@@ -27,6 +27,7 @@ class PluginAPI:
         """
         调用其他插件的函数
         """
+        print(f"[PluginAPI] Call {plugin_name} function {function_name}")
         try:
             # 查找插件
             for wrapper in self.engine.plugin_manager.plugins:

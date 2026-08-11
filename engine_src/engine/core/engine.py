@@ -159,8 +159,8 @@ class Engine:
 
 
     def start_dialog_game(self,is_go_from_save_game=False,save_path=""):
-        self.main_menu_bgm.stop()
         if not is_go_from_save_game:
+            self.main_menu_bgm.stop()
             self.in_dialog_game = True
             self.ugc_ui_manager.clear_ui()
             first_start_dialog_config = json.load(open("config/dialog.json","r",encoding="utf-8"))

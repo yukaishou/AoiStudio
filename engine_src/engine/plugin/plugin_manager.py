@@ -38,14 +38,27 @@ class PluginManager:
             print(f"插件{information['name']}加载成功")
 
     def start(self):
+        # 专门不写try的，因为插件启动失败应该让引擎也跟着一起罢工，所以这个失败了直接走fatal报错
         for plugin in self.plugins:
             plugin.start()
 
     def update(self):
-        for plugin in self.plugins:
-            plugin.update()
+        # 这个得写try，谁也不想玩家玩着玩着崩了
+        name = ""
+        plugin = None
+        try:
+            for plugin in self.plugins:
+                name = plugin.plugin_info['name']
+                plugin.update()
+        except Exception as e:
+            print(f"ERROR: 插件{name}更新时出错: {e}")
+            plugin.plugin.on_game_end()
+            self.plugins.remove(plugin)
+            print(f"插件{name}已卸载")
+
 
     def end(self):
+        # 专门不写try的，因为插件end罢工应该让引擎也跟着一起罢工，所以这个失败了直接走fatal报错
         for plugin in self.plugins:
             plugin.plugin.end()
 
@@ -71,7 +84,10 @@ class PluginObject:
 
 
     def update(self):
-        self.plugin.on_game_update()
+            self.plugin.on_game_update()
 
     def end(self):
         self.plugin.on_game_end()
+
+    def on_unload(self):
+        self.plugin.on_game_unload()
