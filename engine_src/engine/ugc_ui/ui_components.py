@@ -1,5 +1,6 @@
 import pygame
 from .ui_element import UIElement
+from engine_src.engine.core import log
 
 class UIButton(UIElement):
     def __init__(self, text, x, y, width, height, hit_sound_path=None, callback=None, font_path=None,anchor="center",engine = None):
@@ -14,19 +15,19 @@ class UIButton(UIElement):
             else:
                 self.font = pygame.font.SysFont(None, 24)
         except Exception as e:
-            print(f"加载按钮字体失败: {e}")
+            log.log(2, f"[UI] 加载按钮字体失败: {e}")
             pygame.font.init()
             self.font = pygame.font.Font(None, 24)
         # 加载点击音效
         try:
             if hit_sound_path:
                 self.click_sound = self.engine.resource_manager.load_sound(hit_sound_path)
-                print("加载按钮点击音效成功")
+                log.log(4, f"[UI] 加载按钮点击音效成功")
             else:
                 self.click_sound = None
-                print("没有按钮点击音效")
+                log.log(4, f"[UI] 没有按钮点击音效")
         except Exception as e:
-            print(f"加载按钮点击音效失败: {e}")
+            log.log(2, f"[UI] 加载按钮点击音效失败: {e}")
         self.hovered = False
 
     def handle_event(self, event):
@@ -44,6 +45,7 @@ class UIButton(UIElement):
         text_surf = self.font.render(self.text, True, (255, 255, 255))
         text_rect = text_surf.get_rect(center=self.rect.center)
         surface.blit(text_surf, text_rect)
+
 
 class UIImage(UIElement):
     def __init__(self, image_path, x, y, width, height,size_mode="cover",anchor="center",engine= None):
@@ -94,12 +96,13 @@ class UIImage(UIElement):
             self.image = pygame.transform.smoothscale(self.original_img, (max(1, final_w), max(1, final_h)))
             self.rect = self.image.get_rect(topleft=self.pos)
         except Exception as e:
-            print(e)
+            log.log(2, f"[UI] UIImage 加载异常: {e}")
             self.image = None
 
     def draw(self, surface):
         if self.image:
             surface.blit(self.image, self.rect.topleft)
+
 
 class UIText(UIElement):
     def __init__(self, text, x, y, size=24, color=(255, 255, 255), font_path=None, anchor="center",engine= None):
@@ -115,7 +118,7 @@ class UIText(UIElement):
             else:
                 self.font = pygame.font.SysFont(None, size)
         except Exception as e:
-            print(f"加载字体失败: {e}")
+            log.log(2, f"[UI] 加载字体失败: {e}")
             pygame.font.init()
             self.font = pygame.font.Font(None, size)
         self.update_rect()
@@ -128,11 +131,13 @@ class UIText(UIElement):
         surf = self.font.render(self.text, True, self.color)
         surface.blit(surf, self.rect.topleft)
 
+
 class UIRect(UIElement):
     def __init__(self, x, y, width, height, color=(255, 255, 255),border_radius=0, anchor="center",engine= None):
         super().__init__(x, y, width, height, anchor, engine)
         self.color = color
         self.rect = pygame.Rect(x, y, width, height)
         self.border_radius = border_radius
+
     def draw(self, surface):
         pygame.draw.rect(surface, self.color, self.rect, border_radius=self.border_radius)

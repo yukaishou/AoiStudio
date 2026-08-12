@@ -1,6 +1,7 @@
 import pygame
 from engine_src.engine.core import image
 from engine_src.engine.utils import smooth_tween
+from engine_src.engine.core import log
 
 class BaseBackground():
     def __init__(self, image_path,engine):
@@ -29,7 +30,7 @@ class BaseBackground():
         self.image_obj.draw(screen)
 
     def fade_out(self,speed=0.005):
-        print("fade out")
+        log.log(0,"fade out")
         self.is_fade_out = True
         self.speed = speed
         self.target_alpha = 0

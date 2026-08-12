@@ -12,7 +12,7 @@ class PluginAPI:
         self.ugc_ui_manager = engine.ugc_ui_manager
         self.dialog_choice_table = engine.dialog_choice
         self.dialog_table = engine.dialog_table
-        self.dialog_backtext = engine.dialog_backlog
+        self.dialog_backlog = engine.dialog_backlog
 
     def import_model(self,plugin_name,path,name):
         """
