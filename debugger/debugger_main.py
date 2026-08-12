@@ -7,7 +7,7 @@ import threading
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, QPushButton, QLineEdit, QHBoxLayout,
                              QSplitter, QTextEdit, QTabWidget, QLabel, QSpinBox, QListWidget, QListWidgetItem,
-                             QGroupBox, QFormLayout)
+                             QGroupBox, QFormLayout, QMessageBox)
 from PyQt5.QtCore import Qt, QObject, pyqtSignal, QThread, QTimer
 
 
@@ -118,9 +118,12 @@ class DebuggerGuiWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("AoiStudio 调试器")
-        try:
+        if hasattr(sys, "_MEIPASS"):
+            print(11)
+            print(sys._MEIPASS)
             self.setWindowIcon(QIcon(f"{sys._MEIPASS}/icons/AoiStudio.png"))
-        except Exception:
+        else:
+            print(1)
             self.setWindowIcon(QIcon("AoiStudio.png"))
         self.resize(1050, 700)
         self._snapshot = None
@@ -268,6 +271,7 @@ class DebuggerGuiWindow(QMainWindow):
     def _on_conn_lost(self):
         self.conn_status_label.setText("🔴 断开服务器")
         self._append_log("[GUI] 与调试服务断开连接")
+        QMessageBox.warning(self, "连接断开", "与调试服务断开连接")
         sys.exit()
 
     def _append_log(self, text: str):

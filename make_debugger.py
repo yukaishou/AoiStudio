@@ -22,7 +22,7 @@ def build(output_dir):
 }
     with open(output_dir+"debugger_output/info.json", "w" , encoding="utf-8") as f:
         json.dump(info_data, f, ensure_ascii=False, indent=4)
-    os.system(f"pyinstaller --onefile --icon=AoiStudio.png  --distpath={output_dir+'debugger_output'} --add-data debugger/AoiStudio.png;icons/AoiStudio.png --name=AoiStudioDebugger debugger/debugger_main.py")
+    os.system(f"pyinstaller --noconsole  --onefile --icon=AoiStudio.png  --distpath={output_dir+'debugger_output'} --add-data debugger/AoiStudio.png;icons --name=debugger debugger/debugger_main.py")
 
     with zipfile.ZipFile(output_dir+"debugger_output/debugger.aoi", "w") as zip:
         zip.write(output_dir+"debugger_output/debugger.exe", "debugger.exe")
