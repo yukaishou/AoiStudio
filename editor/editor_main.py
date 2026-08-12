@@ -1,6 +1,7 @@
 import os
 import shutil
 import threading
+import time
 import traceback
 
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QTreeView, QListView,
@@ -532,6 +533,7 @@ class MainEditorWindow(QMainWindow):
         if self.is_opening_project:
             print("正在预览中...")
             # 异步预览
+            self.debugger_path = open("caches/debugger_path.txt", encoding="utf-8").read()
             threading.Thread(target=lambda: self.preview_game_debugger()).start()
             threading.Thread(target=lambda :self.preview_game_thread()).start()
         else:
@@ -546,9 +548,9 @@ class MainEditorWindow(QMainWindow):
         os.chdir(o_path)
 
     def preview_game_debugger(self):
-        if os.path.exists(open("caches/debug_player_path.txt", encoding="utf-8").read()):
-            debugger_path = open("caches/debug_player_path.txt", encoding="utf-8").read()
-            os.system(debugger_path)
+        time.sleep(1.5)
+        if os.path.exists(self.debugger_path):
+            os.system(self.debugger_path)
 
     def pause_all_audio(self, exclude=None):
         """暂停所有音频预览，切换播放时互斥"""

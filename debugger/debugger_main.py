@@ -271,7 +271,7 @@ class DebuggerGuiWindow(QMainWindow):
     def _on_conn_lost(self):
         self.conn_status_label.setText("🔴 断开服务器")
         self._append_log("[GUI] 与调试服务断开连接")
-        QMessageBox.warning(self, "连接断开", "与调试服务断开连接")
+        #QMessageBox.warning(self, "连接断开", "与调试服务断开连接")
         sys.exit()
 
     def _append_log(self, text: str):
