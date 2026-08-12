@@ -2,7 +2,7 @@ import pygame
 import json
 import operator
 import re
-
+from engine_src.engine.core import log
 
 def parse_and_eval(condition_str, context):
     # 1. 拆解 (支持 >=, <=, ==, !=, >, <)
@@ -104,10 +104,10 @@ class Dialogue:
         dialog_list = self.dialogue.get("dialogs", [])
         if self.current_dialogue_index >= len(dialog_list):
             self.this_dialogue_is_finished = True
-            print("Dialogue is finished.")
+            log.log(0,"Dialogue is finished")
             return
 
-        print(f"Now Dialogue index : {self.current_dialogue_index}")
+        log.log(0,f"Now Dialogue index : {self.current_dialogue_index}")
         current_node = dialog_list[self.current_dialogue_index]
 
         if len(self.engine.scene.bgm) > 0:
@@ -173,11 +173,11 @@ class Dialogue:
                             if not parse_and_eval(expr, self.characters_affection):
                                 show_option = False
                         except Exception as e:
-                            print(f"选项条件解析失败 {expr} : {e}")
+                            log.log(2,f"选项条件解析失败 {expr} : {e}")
                             show_option = False
                     else:
                         # 未知condition直接隐藏选项
-                        print(f"未知condition {cond_raw}")
+                        log.log(1,f"未知condition {cond_raw}")
                         show_option = False
 
                 if not show_option:

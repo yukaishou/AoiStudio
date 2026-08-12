@@ -9,7 +9,6 @@ class Image:
         :param img: pygame.Surface 对象
         :param size: [width, height] 目标显示区域大小
         :param pos: [x, y] 位置
-        :param interface: 引擎接口引用（用于获取摄像机偏移）
         :param scale: [scale_x, scale_y] 额外缩放比例
         :param size_mode: 尺寸模式 (auto, stretch, fill, contain, cover)
         """

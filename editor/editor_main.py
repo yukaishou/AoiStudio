@@ -13,10 +13,10 @@ from PyQt5.QtGui import QIcon, QPixmap
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
 from common import AoiStudioCrasher
 import json
-import editor_dialog
-import editor_script
-import editor_project_settings
-import tool_id_builder
+from editor import editor_dialog
+from editor import editor_script
+from editor import editor_project_settings
+from editor import tool_id_builder
 import zipfile
 
 
@@ -472,6 +472,8 @@ class MainEditorWindow(QMainWindow):
                 f.write(f"{os.path.abspath("bin/AoiStudioBuildTool.exe")}")
             with open("caches/debug_player_path.txt", "w", encoding="utf-8") as f:
                 f.write(f"{os.path.abspath("bin/AoiStudio_Player_debug.exe")}")
+            with open("caches/debugger_path.txt", "w", encoding="utf-8") as f:
+                f.write(f"{os.path.abspath("bin/AoiStudio_Debugger.exe")}")
         if not os.path.exists(open("caches/debug_player_path.txt", encoding="utf-8").read()):
             self.setWindowTitle(
                 f"AoiStudio Editor {self.editor_config['platform']['name']} {self.editor_config['version']['editor_ui']} - Not installed")
@@ -530,6 +532,7 @@ class MainEditorWindow(QMainWindow):
         if self.is_opening_project:
             print("正在预览中...")
             # 异步预览
+            threading.Thread(target=lambda: self.preview_game_debugger()).start()
             threading.Thread(target=lambda :self.preview_game_thread()).start()
         else:
             QMessageBox.warning(self, "错误", "请先打开项目")
@@ -541,6 +544,11 @@ class MainEditorWindow(QMainWindow):
         os.chdir(self.project_path)
         os.system(player_path)
         os.chdir(o_path)
+
+    def preview_game_debugger(self):
+        if os.path.exists(open("caches/debug_player_path.txt", encoding="utf-8").read()):
+            debugger_path = open("caches/debug_player_path.txt", encoding="utf-8").read()
+            os.system(debugger_path)
 
     def pause_all_audio(self, exclude=None):
         """暂停所有音频预览，切换播放时互斥"""
@@ -691,6 +699,7 @@ class MainEditorWindow(QMainWindow):
                     self.setWindowTitle(
                         f"AoiStudio Editor {self.editor_config['platform']['name']} {self.editor_config['version']['editor_ui']} - {self.editor_config['version']['player']}")
                     QMessageBox.information(self,"安装扩展", "播放器安装成功")
+                    return
                 if file_info["type"] == "abt":
                     shutil.copyfile("temp/abt.exe", open("caches/build_tool_path.txt", "r", encoding="utf-8").read())
                     shutil.rmtree("temp")
@@ -699,12 +708,26 @@ class MainEditorWindow(QMainWindow):
                     with open("config/editor.json", "w", encoding="utf-8") as f:
                         json.dump(editor_config, f, indent=4)
                     QMessageBox.information(self ,"安装扩展", "ABT安装成功")
+                    return
+                if file_info["type"] == "debugger":
+                    shutil.copyfile("temp/debugger.exe", open("caches/debugger_path.txt", "r", encoding="utf-8").read())
+                    shutil.rmtree("temp")
+                    QMessageBox.information(self, "安装扩展", "调试器安装成功")
+                    return
+                if file_info["type"] == "plugin":
+                    if not self.is_opening_project:
+                        QMessageBox.warning(self, "错误", "安装插件请先打开项目")
+                        return
+                    plugin_info = json.load(open("temp/plugin_info.json", "r", encoding="utf-8"))
+                    shutil.copyfile(aoi_file_path,f"{self.project_path}/plugins/{plugin_info['name']}.aoi")
+                    QMessageBox.information(self, "安装扩展", "插件安装成功")
+                    return
+                QMessageBox.warning(self, "错误", "未知的扩展类型")
             except Exception as e:
                 traceback_ext = traceback.format_exc()
                 print(traceback_ext)
                 QMessageBox.warning(self, "错误", f"安装失败：{str(e)}")
 if __name__ == "__main__":
-
     try:
         app = QApplication([])
         win = MainEditorWindow()
