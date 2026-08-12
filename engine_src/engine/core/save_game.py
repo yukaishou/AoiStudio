@@ -10,10 +10,11 @@ class SaveGame:
 
     def save_game(self, path):
         dialogue_file_path = self.engine.dialog.dialogue_file_path
-        if self.engine.dialog.current_dialogue_index == 0:
-            dialogue_index = self.engine.dialog.current_dialogue_index
+        if self.engine.dialog.current_dialogue_index == 1:
+            dialogue_index = self.engine.dialog.current_dialogue_index-1
         else:
-            dialogue_index = self.engine.dialog.current_dialogue_index
+            if not self.engine.dialog_table.full_text == self.engine.dialog.dialogue["dialogs"][self.engine.dialog.current_dialogue_index]:
+                dialogue_index = self.engine.dialog.current_dialogue_index -1
         flags = list(self.engine.dialog.flags)
         characters_affection = self.engine.dialog.characters_affection
         if len(self.engine.scene.backgrounds) == 0:
@@ -74,8 +75,7 @@ class SaveGame:
             self.engine.scene.add_background(save_game_data["scene"]["now_background"][5:])
         for i in save_game_data["scene"]["characters"]:
             self.engine.scene.add_character(i["image_path"], i["position"])
-            # 限制角色数量,为了防止角色被加载的cfg脚本而加载其他角色
-            self.engine.scene.characters = self.engine.scene.characters[:len(save_game_data["scene"]["characters"])]
+
 
         self.engine.dialog.flags = save_game_data["flags"]
         self.engine.dialog.characters_affection = save_game_data["variables"]["characters_affection"]
@@ -83,6 +83,11 @@ class SaveGame:
         if not save_game_data["scene"]["bgm"] == "None":
             self.engine.scene.switch_bgm(save_game_data["scene"]["bgm"][5:], 0.5)
         self.engine.dialog.start_dialogue(True)
+        # 限制角色数量,为了防止角色被加载的cfg脚本而加载其他角色
+        self.engine.scene.characters = self.engine.scene.characters[:len(save_game_data["scene"]["characters"])]
+        self.engine.in_dialog_game = True
+        self.engine.ugc_ui_manager.clear_ui()
+        self.engine.main_menu_bgm.stop()
         log.log(0, f"[SAVE] 成功读取存档：{path}")
 
     def init_solt(self):

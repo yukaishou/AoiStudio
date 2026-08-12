@@ -32,6 +32,7 @@ if __name__ == "__main__":
         game.run()
         if os.path.exists("plugins_runtime"):
             shutil.rmtree("plugins_runtime")
+        game.debug_server.stop()
     except Exception as e:
 
 

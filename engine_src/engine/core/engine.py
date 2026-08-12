@@ -1,5 +1,6 @@
 import os
 import shutil
+import threading
 
 import pygame
 import json
@@ -18,6 +19,7 @@ from engine_src.engine.ugc_ui import ui_manager
 from engine_src.engine.ugc_ui import ui_loader
 from engine_src.engine.plugin import plugin_manager
 from engine_src.engine.core import log
+from engine_src.engine.debug import debugger_tcp_serevr
 
 
 class Engine:
@@ -54,6 +56,7 @@ class Engine:
         self.scene = scene_manager.Scene(self)
         self.dialog = dialogue.Dialogue(self)
         self.cfg_decoder = cfg_decoder.CFGDecoder(self)
+        self.debug_server = debugger_tcp_serevr.DebugServerMain(self)
 
         # 初始化 UI
         self.ugc_ui_manager = ui_manager.UIManager(self.game_size)
@@ -93,6 +96,8 @@ class Engine:
                     if file.endswith(".aoi"):
                         self.plugin_manager.load_plugin(os.path.join(root, file))
         self.plugin_manager.start()
+        # 启动调试服务器
+        threading.Thread(target=self.debug_server.start).start()
         # 游戏主循环
         while self.running:
             for event in pygame.event.get():
