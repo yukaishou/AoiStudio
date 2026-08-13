@@ -1,7 +1,7 @@
 AoiStudio/
 ├─ all_code_row.py                 # 代码行数统计脚本
-├─ make_abt.py
-├─ make_debugger.py
+├─ make_abt.py                     # ABT编译
+├─ make_debugger.py                # 调试器编译
 ├─ make_editor.py                  # 编辑器编译
 ├─ make_engine.py                  # 播放器编译
 ├─ common/                         # 全局公共库

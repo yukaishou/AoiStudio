@@ -18,6 +18,7 @@ from editor import editor_dialog
 from editor import editor_script
 from editor import editor_project_settings
 from editor import tool_id_builder
+from editor import  editor_character
 import zipfile
 
 
@@ -496,6 +497,7 @@ class MainEditorWindow(QMainWindow):
         file_menu = menubar.addMenu("文件")
         file_menu.addAction("退出", self.close)
         file_menu.addAction("构建剧本索引", self.build_id_file)
+        file_menu.addAction("编辑角色", self.edit_character)
 
         view_menu = menubar.addMenu("项目")
         open_fm_act = QAction("打开项目", self)
@@ -672,6 +674,16 @@ class MainEditorWindow(QMainWindow):
         aoi_build_tool_path = open("caches/build_tool_path.txt",encoding="utf-8").read()
         player_path = open("caches/player_path.txt",encoding="utf-8").read()
         os.system(f"{aoi_build_tool_path} {self.project_path} {output_path} {player_path}")
+
+    def edit_character(self):
+        try:
+            if self.is_opening_project:
+                char_editor = editor_character.CharacterEditorWidget(self, f"{self.project_path}/config/characters.json")
+                char_editor.show()
+            else:
+                QMessageBox.warning(self, "错误", "请先打开项目")
+        except Exception as e:
+            QMessageBox.warning(self, "错误", f"打开失败：{str(e)}")
 
     def build_id_file(self):
         if not self.is_opening_project:
