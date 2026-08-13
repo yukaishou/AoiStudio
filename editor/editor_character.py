@@ -1,48 +1,53 @@
 import json
+import os
 from PyQt5.QtWidgets import (QApplication, QWidget, QVBoxLayout, QHBoxLayout,
                              QListWidget, QListWidgetItem, QLineEdit, QPushButton,
-                             QLabel, QMessageBox)
+                             QLabel, QMessageBox, QMainWindow)
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont, QIcon
 
 
-class CharacterEditorWidget(QWidget):
+class CharacterEditorWidget(QMainWindow):
     """
-    角色编辑器组件：独立Widget，可以：
-    1. 作为弹窗：editor = CharacterEditorWidget(); editor.show()
-    2. 嵌入主窗口布局：main_layout.addWidget(editor)
-    ✅完整支持中文输入、显示、JSON导出
+    角色编辑器【独立弹窗窗口】
+    仅弹窗使用：editor = CharacterEditorWidget(parent=None,file_path="xxx"); editor.show()
+    ⚠本类继承QMainWindow，不支持嵌入其他窗口布局/Dock
     """
-    def __init__(self, parent=None,file_path=None):
+    def __init__(self, parent=None, file_path=None):
         super().__init__(parent)
-        self.characters = []  # 存储角色数据 [{"name": "xxx"}, ...]
+        self.characters = []
         self.file_path = file_path
         self.init_ui()
-        self.load_json_data(json.load(open(self.file_path, encoding="utf-8")))
+
+        # 如果传入文件路径，自动加载，增加异常捕获
+        if self.file_path is not None:
+            self.load_from_file()
+
     def init_ui(self):
         self.setWindowTitle("角色编辑器")
-        self.setWindowIcon(QIcon("res/AoiStudio.png"))
-        main_layout = QVBoxLayout(self)
+        self.resize(620, 420)
+        if os.path.exists("res/AoiStudio.png"):
+            self.setWindowIcon(QIcon("res/AoiStudio.png"))
 
-        # 标题
+        # QMainWindow必须创建centralWidget，布局挂在它上面，禁止直接self.setLayout()
+        central_widget = QWidget()
+        self.setCentralWidget(central_widget)
+        main_layout = QVBoxLayout(central_widget)
+
         main_layout.addWidget(QLabel("<h3>角色编辑器</h3>"))
 
-        # 水平分割：角色列表 | 编辑区
         h_layout = QHBoxLayout()
 
-        # 角色列表
         self.list_widget = QListWidget()
         self.list_widget.setMinimumWidth(180)
         self.list_widget.currentItemChanged.connect(self.on_select_item)
         h_layout.addWidget(self.list_widget)
 
-        # 编辑面板
         edit_layout = QVBoxLayout()
         edit_layout.addWidget(QLabel("角色名称:"))
         self.edit_name = QLineEdit()
         edit_layout.addWidget(self.edit_name)
 
-        # 按钮行
         btn_layout = QHBoxLayout()
         self.btn_new = QPushButton("新增角色")
         self.btn_new.clicked.connect(self.add_new_character)
@@ -60,19 +65,26 @@ class CharacterEditorWidget(QWidget):
         h_layout.addLayout(edit_layout)
         main_layout.addLayout(h_layout)
 
-        self.setLayout(main_layout)
+    def load_from_file(self):
+        """从file_path读取json，捕获异常"""
+        if not os.path.exists(self.file_path):
+            QMessageBox.warning(self, "警告", f"角色文件不存在：{self.file_path}")
+            return
+        try:
+            with open(self.file_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            self.load_json_data(data)
+        except Exception as e:
+            QMessageBox.critical(self, "读取失败", f"读取角色配置失败:\n{str(e)}")
 
     def load_json_data(self, data: dict):
-        """加载json数据，输入 {"characters": [{"name":"马里奥"}]}"""
         self.characters = data.get("characters", [])
         self.refresh_list()
 
     def get_json_data(self) -> dict:
-        """获取编辑后的完整json结构"""
         return {"characters": self.characters}
 
     def refresh_list(self):
-        """刷新列表控件"""
         self.list_widget.clear()
         for idx, ch in enumerate(self.characters):
             item = QListWidgetItem(ch.get("name", f"角色{idx}"))
@@ -80,7 +92,6 @@ class CharacterEditorWidget(QWidget):
             self.list_widget.addItem(item)
 
     def on_select_item(self, item: QListWidgetItem):
-        """选中列表项，填充到输入框"""
         if not item:
             self.edit_name.clear()
             return
@@ -89,13 +100,11 @@ class CharacterEditorWidget(QWidget):
         self.edit_name.setText(ch.get("name", ""))
 
     def add_new_character(self):
-        """新增空白角色"""
         self.characters.append({"name": ""})
         self.refresh_list()
         self.list_widget.setCurrentRow(len(self.characters)-1)
 
     def save_current_edit(self):
-        """保存当前选中项的修改"""
         item = self.list_widget.currentItem()
         if not item:
             QMessageBox.warning(self, "提示", "请先选择一个角色")
@@ -104,9 +113,14 @@ class CharacterEditorWidget(QWidget):
         new_name = self.edit_name.text().strip()
         self.characters[idx]["name"] = new_name
         self.refresh_list()
-        with open(self.file_path, "w", encoding="utf-8") as f:
-            json.dump(self.get_json_data(), f, ensure_ascii=False, indent=4)
-        QMessageBox.information(self, "提示", "保存成功")
+
+        if self.file_path:
+            try:
+                with open(self.file_path, "w", encoding="utf-8") as f:
+                    json.dump(self.get_json_data(), f, ensure_ascii=False, indent=4)
+                QMessageBox.information(self, "提示", "保存成功")
+            except Exception as e:
+                QMessageBox.critical(self, "保存失败", f"写入文件失败:\n{str(e)}")
 
     def delete_selected(self):
         item = self.list_widget.currentItem()
@@ -121,12 +135,11 @@ class CharacterEditorWidget(QWidget):
 # ============ 示例运行 ============
 if __name__ == "__main__":
     app = QApplication([])
-    # 全局设置中文字体，解决方框乱码
-    #font = QFont()
-    #font.setFamily("SimHei")  # 黑体 Windows; Linux/Mac自动降级
-    #app.setFont(font)
+    # 使用系统默认字体，自动兼容中文
+    default_font = app.font()
+    default_font.setStyleHint(QFont.System)
+    app.setFont(default_font)
 
-    # 初始测试数据，中文角色测试
     init_data = {
         "characters": [
             {"name": "马里奥"},
@@ -137,16 +150,15 @@ if __name__ == "__main__":
 
     win = CharacterEditorWidget()
     win.load_json_data(init_data)
-    win.resize(600,400)
 
-    # 打印JSON，关键：ensure_ascii=False 输出原始中文，不要转义
     def print_result():
         output = win.get_json_data()
         print(json.dumps(output, indent=2, ensure_ascii=False))
 
     test_btn = QPushButton("打印当前JSON")
     test_btn.clicked.connect(print_result)
-    win.layout().addWidget(test_btn)
+    # 加到centralWidget的布局
+    win.centralWidget().layout().addWidget(test_btn)
 
     win.show()
     app.exec_()
