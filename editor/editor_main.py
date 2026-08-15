@@ -19,6 +19,7 @@ from editor import editor_script
 from editor import editor_project_settings
 from editor import tool_id_builder
 from editor import  editor_character
+from editor import editor_main_menu_settings
 import zipfile
 
 

@@ -2,6 +2,6 @@
   "main_menu_ui_path": "file:gui/main_menu_ui.json",
   "save_game_ui_path": "file:gui/save_game_ui.json",
   "settings_ui_path": "file:gui/settings_ui.json",
-  "background": "file:backgrounds/BG_1.jpeg",
-  "bgm": "file:bgms/bgm2.mp3"
+  "background": "None",
+  "bgm": "None"
 }
