@@ -34,7 +34,7 @@ class GalDialogBox:
             font = pygame.font.Font("fonts/default.ttf", 24)
         self.font = font
         self.text_color = (255, 255, 255)
-        self.text_speed = 0.06              # 每个字符间隔秒数
+        self.text_speed = 0.02              # 每个字符间隔秒数
         self.line_height = 32               # 行间距
         self.max_line_count = 5             # 对话框最大显示行数
 

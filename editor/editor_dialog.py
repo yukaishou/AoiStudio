@@ -309,6 +309,7 @@ class DialogJsonEditor(QWidget):
 
     # ---------------- 自动保存：直接写入源文件，仅已打开文件生效，不清除脏标记 ----------------
     def _do_autosave(self):
+        return # 没啥用，还有bug，暂时弃用
         """定时器回调：自动保存到源文件，新建未保存文件跳过"""
         if not self.is_edit_project or not self.editing_file_path:
             return

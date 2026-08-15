@@ -29,6 +29,8 @@ class Engine:
         :param game_title:
         :param game_size:
         """
+        pygame.display.set_caption(game_title)
+        pygame.display.set_icon(pygame.image.load("icons/AppIcon.png"))
         self.id_index_map = json.load(open("config/dialog_index.json"))
         self.main_menu_config = json.load(open("config/main_menu.json"))
         self.center = [game_size[0] // 2, game_size[1] // 2]
@@ -37,8 +39,6 @@ class Engine:
         self.game_name = game_title
         self.game_size = game_size
         self.screen = pygame.display.set_mode(game_size, pygame.HWSURFACE | pygame.DOUBLEBUF | pygame.SCALED)
-        pygame.display.set_caption(game_title)
-        pygame.display.set_icon(pygame.image.load("icons/AppIcon.png"))
         # 游戏状态
         self.running = True
         self.in_dialog_game = False

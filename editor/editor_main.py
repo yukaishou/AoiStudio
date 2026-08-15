@@ -686,6 +686,10 @@ class MainEditorWindow(QMainWindow):
         project_setings_act.triggered.connect(self.open_project_settings)
         view_menu.addAction(project_setings_act)
 
+        project_main_menu_settings_act = QAction("主菜单设置", self)
+        project_main_menu_settings_act.triggered.connect(self.open_project_main_menu_settings)
+        view_menu.addAction(project_main_menu_settings_act)
+
         project_build_act = QAction("打包项目", self)
         project_build_act.triggered.connect(self.project_build)
         view_menu.addAction(project_build_act)
@@ -857,6 +861,19 @@ class MainEditorWindow(QMainWindow):
             return
         project_settings_win = editor_project_settings.ProjectConfigEditor(self, self.project_path)
         project_settings_win.show()
+
+    def open_project_main_menu_settings(self):
+
+        if not self.is_opening_project:
+            QMessageBox.warning(self, "错误", "请先打开项目")
+            return
+        try:
+            project_main_menu_settings_win = editor_main_menu_settings.ConfigPopupWindow(self)
+            project_main_menu_settings_win.load_json(path=f"{self.project_path}/config/main_menu.json")
+            project_main_menu_settings_win.show()
+        except Exception as e:
+            print(e)
+            QMessageBox.warning(self, "错误", f"打开失败：{str(e)}")
 
     def project_build(self):
         if not os.path.exists(open("caches/build_tool_path.txt",encoding="utf-8").read()):
