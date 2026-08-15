@@ -22,6 +22,167 @@ from editor import  editor_character
 import zipfile
 
 
+# -------------------------- 主题QSS样式 --------------------------
+LIGHT_THEME_QSS = """
+QMainWindow, QWidget{
+    background-color: #f0f0f0;
+    color:#191919;
+}
+QMenuBar{
+    background-color:#e8e8e8;
+}
+QMenuBar::item{
+    padding:4px 12px;
+}
+QMenuBar::item:selected{
+    background-color:#d0d0d0;
+}
+QMenu{
+    background-color:#ffffff;
+    border:1px solid #aaaaaa;
+}
+QMenu::item:selected{
+    background-color:#b8d4f0;
+}
+QTabWidget::pane{
+    border:1px solid #aaaaaa;
+}
+QTabBar::tab{
+    background:#e0e0e0;
+    padding:6px 12px;
+    border:1px solid #aaaaaa;
+    border-bottom:none;
+}
+QTabBar::tab:selected{
+    background:#f0f0f0;
+}
+QTreeView,QListView,QTextEdit{
+    background:#ffffff;
+    border:1px solid #aaaaaa;
+}
+/* 修复：viewport画布背景，解决白色块 */
+QTreeView::viewport {
+    background:#ffffff;
+}
+QListView::viewport {
+    background:#ffffff;
+}
+QTreeView::item, QListView::item{
+    background:#ffffff;
+}
+QTreeView::item:selected, QListView::item:selected{
+    background:#b8d4f0;
+    color:#000000;
+}
+QPushButton{
+    padding:5px 12px;
+    border:1px solid #999999;
+    border-radius:2px;
+    background:#f7f7f7;
+}
+QPushButton:hover{
+    background:#e4e4e4;
+}
+QSlider::groove:horizontal{
+    height:6px;
+    background:#cccccc;
+    border-radius:3px;
+}
+QSlider::handle:horizontal{
+    width:14px;
+    margin:-4px 0;
+    background:#777777;
+    border-radius:7px;
+}
+#PathBarLabel{
+    background-color:#e8e8e8;
+    border-bottom:1px solid #aaaaaa;
+}
+"""
+
+DARK_THEME_QSS = """
+QMainWindow, QWidget{
+    background-color: #2c2c2c;
+    color:#dddddd;
+}
+QMenuBar{
+    background-color:#383838;
+}
+QMenuBar::item{
+    padding:4px 12px;
+}
+QMenuBar::item:selected{
+    background-color:#4e4e4e;
+}
+QMenu{
+    background-color:#383838;
+    border:1px solid #555555;
+}
+QMenu::item:selected{
+    background-color:#2d5b8c;
+}
+QTabWidget::pane{
+    border:1px solid #444444;
+}
+QTabBar::tab{
+    background:#383838;
+    padding:6px 12px;
+    border:1px solid #444444;
+    border-bottom:none;
+}
+QTabBar::tab:selected{
+    background:#2c2c2c;
+}
+QTreeView,QListView,QTextEdit{
+    background:#343434;
+    border:1px solid #444444;
+    color:#dddddd;
+}
+/* 修复：viewport画布背景，解决暗色下白色内容区域 */
+QTreeView::viewport {
+    background:#343434;
+}
+QListView::viewport {
+    background:#343434;
+}
+QTreeView::item, QListView::item{
+    background:#343434;
+    color:#dddddd;
+}
+QTreeView::item:selected, QListView::item:selected{
+    background:#2d5b8c;
+}
+QPushButton{
+    padding:5px 12px;
+    border:1px solid #555555;
+    border-radius:2px;
+    background:#444444;
+    color:#dddddd;
+}
+QPushButton:hover{
+    background:#525252;
+}
+QSlider::groove:horizontal{
+    height:6px;
+    background:#505050;
+    border-radius:3px;
+}
+QSlider::handle:horizontal{
+    width:14px;
+    margin:-4px 0;
+    background:#aaaaaa;
+    border-radius:7px;
+}
+QScrollArea{
+    border:none;
+}
+#PathBarLabel{
+    background-color:#3c3c3c;
+    border-bottom:1px solid #444444;
+}
+"""
+
+
 def ms_to_time(ms):
     """毫秒转为 00:00 格式"""
     sec = ms // 1000
@@ -210,6 +371,12 @@ class FileManagerPage(QWidget):
         self.list_view.setContextMenuPolicy(Qt.CustomContextMenu)
         self.list_view.customContextMenuRequested.connect(self.list_right_menu)
 
+        # ========== 修复顽固白色背景：强制QSS绘制背景，不使用原生系统绘制 ==========
+        self.tree_view.setAttribute(Qt.WA_StyledBackground, True)
+        self.tree_view.viewport().setAttribute(Qt.WA_StyledBackground, True)
+        self.list_view.setAttribute(Qt.WA_StyledBackground, True)
+        self.list_view.viewport().setAttribute(Qt.WA_StyledBackground, True)
+
         # 拖拽
         self.tree_view.setDragEnabled(True)
         self.tree_view.setAcceptDrops(True)
@@ -224,9 +391,9 @@ class FileManagerPage(QWidget):
 
         # 路径栏
         self.path_label = QLabel(root_path)
+        self.path_label.setObjectName("PathBarLabel")
         self.path_label.setAlignment(Qt.AlignCenter)
         self.path_label.setFixedHeight(30)
-        self.path_label.setStyleSheet("background-color: #f0f0f0;")
 
         splitter = QSplitter(Qt.Horizontal)
         splitter.addWidget(self.tree_view)
@@ -311,12 +478,15 @@ class FileManagerPage(QWidget):
                     act_open_preview.triggered.connect(lambda: self.main_win.script_editor_tab(path))
                     menu.addAction(act_open_preview)
                 if path.endswith(".json"):
-                    data = json.load(open(path, encoding="utf-8"))
-                    # 如果拥有dialogs数组
-                    if "dialogs" in data:
-                        act_open_preview = QAction("对话编辑", self)
-                        act_open_preview.triggered.connect(lambda: self.main_win.dialogue_editor_tab(file_path=path,main_win=self.main_win))
-                        menu.addAction(act_open_preview)
+                    try:
+                        data = json.load(open(path, encoding="utf-8"))
+                        # 如果拥有dialogs数组
+                        if "dialogs" in data:
+                            act_open_preview = QAction("对话编辑", self)
+                            act_open_preview.triggered.connect(lambda: self.main_win.dialogue_editor_tab(file_path=path,main_win=self.main_win))
+                            menu.addAction(act_open_preview)
+                    except:
+                        pass
 
         if self.clip_path:
             act_paste = QAction("粘贴", self)
@@ -462,8 +632,11 @@ class MainEditorWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.editor_config = json.load(open("config/editor.json",encoding="utf-8"))
-        self.setWindowIcon(QIcon("res/AoiStudio.png"))
+        # 如果配置没有theme字段，默认light
+        if "theme" not in self.editor_config:
+            self.editor_config["theme"] = "light"
 
+        self.setWindowIcon(QIcon("res/AoiStudio.png"))
         self.resize(1200, 750)
 
         if not os.path.exists("caches"):
@@ -525,6 +698,34 @@ class MainEditorWindow(QMainWindow):
         aoi_studio_menu = menubar.addMenu("AoiStudio")
         aoi_studio_menu.addAction("安装扩展", self.install_aoi_file)
 
+        # ========== 新增主题子菜单 ==========
+        theme_submenu = aoi_studio_menu.addMenu("主题")
+        act_theme_light = QAction("浅色主题", self)
+        act_theme_light.triggered.connect(lambda:self.switch_theme("light"))
+        act_theme_dark = QAction("暗色主题", self)
+        act_theme_dark.triggered.connect(lambda:self.switch_theme("dark"))
+        theme_submenu.addAction(act_theme_light)
+        theme_submenu.addAction(act_theme_dark)
+
+        # 启动加载保存的主题
+        self.apply_theme(self.editor_config["theme"])
+
+
+    def apply_theme(self, theme_name):
+        """应用主题样式"""
+        app = QApplication.instance()
+        if theme_name == "dark":
+            app.setStyleSheet(DARK_THEME_QSS)
+        else:
+            app.setStyleSheet(LIGHT_THEME_QSS)
+
+    def switch_theme(self, theme_name):
+        """切换主题并保存配置"""
+        self.editor_config["theme"] = theme_name
+        # 保存到editor.json
+        with open("config/editor.json","w",encoding="utf-8") as f:
+            json.dump(self.editor_config,f,ensure_ascii=False,indent=4)
+        self.apply_theme(theme_name)
 
     def preview_game(self):
         if not os.path.exists(open("caches/debug_player_path.txt",encoding="utf-8").read()):
@@ -640,7 +841,8 @@ class MainEditorWindow(QMainWindow):
                             "game_size": [1200, 768],
                             "splash_screen": True,
                             "show_studio_logo": True,
-                            "show_made_with_engine": True
+                            "show_made_with_engine": True,
+                            "engine_version":self.editor_config["version"]["player"]
                         }
                         , f, indent=4
                     )
@@ -741,9 +943,12 @@ class MainEditorWindow(QMainWindow):
                 traceback_ext = traceback.format_exc()
                 print(traceback_ext)
                 QMessageBox.warning(self, "错误", f"安装失败：{str(e)}")
+
+
 if __name__ == "__main__":
     try:
         app = QApplication([])
+        app.setStyle("Fusion")
         win = MainEditorWindow()
         win.show()
         app.exec_()

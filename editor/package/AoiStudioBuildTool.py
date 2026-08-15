@@ -55,7 +55,7 @@ class AoiBuildTool:
         time.sleep(0.25)
 
         final_folder = os.path.join(self.output_path, game_name)
-        shutil.move(out_dir, final_folder)
+        shutil.move(out_dir, str(final_folder))
 
         os.startfile(final_folder)
         # 这个是阻塞的，是用来看日志的，用来测试的时候就把注释去掉

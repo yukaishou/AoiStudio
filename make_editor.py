@@ -23,6 +23,8 @@ def build(output_dir,editor_ui_ver,player_ver,abt_ver):
             f"pyinstaller --onefile --icon=AoiStudio.png  --distpath={output_dir + 'editor_output/bin'} --name=AoiStudioBuildTool editor/package/AoiStudioBuildTool.py")
     os.system(
         f"pyinstaller --onefile --noconsole --icon=AoiStudio.png  --distpath={output_dir + 'editor_output'} --name=AoiStudioEditor editor/editor_main.py")
+    os.system(
+        f"pyinstaller --noconsole  --onefile --icon=AoiStudio.png  --distpath={output_dir + 'editor_output/bin'} --add-data debugger/AoiStudio.png;icons --name=AoiStudio_Debugger debugger/debugger_main.py")
 
     shutil.copytree("editor/config", output_dir+"editor_output/config")
     shutil.copytree("editor/res", output_dir+"editor_output/res")
