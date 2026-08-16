@@ -21,6 +21,5 @@ def count_py_lines(folder_path: str):
     return total_lines
 if __name__ == "__main__":
     # 修改这里为你的目标文件夹路径
-    target_folder = r"engine_src"
+    target_folder = r"."
     count_py_lines(target_folder)
-    count_py_lines("editor")

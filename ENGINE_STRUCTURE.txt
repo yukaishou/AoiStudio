@@ -1,41 +1,65 @@
-editor/
--editor_main.py #编辑器入口
--editor_dialog.py #剧本/对话编辑标签页
--editor_script.py #脚本编辑标签页
--editor_project_settings.py #项目设置窗口
--tool_id_builder.py #对话索引构建
--package/ #打包工具
---os_tools/ #根据名字就可以看出作用
---AoiStudioBuildTool.py #ABT源码
---assets_bundle_package_build.py #打pak包工具
-engine_src/
--main.py #核心入口
--engine/
---core/
----engine.py #核心
----image.py #图片封装
----save_game.py #存档系统
----scene_manager.py #场景管理
----dialogue.py #对话系统
----cfg_decoder.py #cfg脚本解析
----base_sound.py #音效封装
----base_background.py #背景类
----base_character.py #角色类
---resource/
----asset_bundle.py #包管理系统
----resource.py #资源管理
---ugc_ui/
----ui_manager.py #自定义UI管理器
----ui_loader.py #自定义UI加载器
----ui_element.py #自定义UI基类
----ui_components.py #自定义UI的组件
---ui/
----dialog_table.py #游戏中的对话框
----dialog_choice.py #游戏中的选择框
----dialog_backtext.py #游戏中文本回溯
---utils/
----dpi_tool.py #DPI适配工具（弃用）
----smooth_tween.py #顺滑插值工具
--splash_screen.py #开始屏幕
-common/
--AoiStudioCrasher.py #引擎崩溃的错误抛出窗口
+AoiStudio/
+├─ all_code_row.py                 # 代码行数统计脚本
+├─ make_abt.py                     # ABT编译
+├─ make_debugger.py                # 调试器编译
+├─ make_editor.py                  # 编辑器编译
+├─ make_engine.py                  # 播放器编译
+├─ common/                         # 全局公共库
+│  ├─ AoiStudioCrasher.py          # 崩溃捕获、崩溃报告
+│  └─ __init__.py
+├─ debugger/                       # 调试器客户端
+│  └─ debugger_main.py
+├─ editor/                         # PyQt5编辑器
+│  ├─ editor_main.py               # 编辑器主入口
+│  ├─ editor_dialog.py             # 对话编辑面板
+│  ├─ editor_project_settings.py   # 项目设置面板
+│  ├─ editor_script.py             # CFG脚本编辑器
+│  ├─ tool_id_builder.py           # ID生成工具
+│  ├─ package/                     # 打包工具子模块
+│  │  ├─ AoiStudioBuildTool.py               # 总构建工具
+│  │  ├─ assets_bundle_package_build.py      # 资源包构建
+│  │  └─ os_tools/
+│  │     ├─ tool_chage_exe_icon.py   # 修改exe图标
+│  │     └─ tool_image_to_ico.py     # 图片转ico
+│  └─ __init__.py
+├─ engine_src/                     # 游戏引擎源代码
+│  ├─ main.py                      # 引擎启动入口
+│  ├─ test_resource_load_json_path_ok.py
+│  ├─ engine/
+│  │  ├─ splash_screen.py          # 启动闪屏
+│  │  ├─ core/                     # 引擎核心
+│  │  │  ├─ base_background.py      # 背景渲染
+│  │  │  ├─ base_character.py      # 角色立绘
+│  │  │  ├─ base_sound.py          # 音频封装
+│  │  │  ├─ cfg_decoder.py         # CFG脚本解析器【核心】
+│  │  │  ├─ dialogue.py            # 对话系统
+│  │  │  ├─ engine.py              # 引擎主循环
+│  │  │  ├─ image.py               # 图片资源封装
+│  │  │  ├─ log.py                 # 日志
+│  │  │  ├─ save_game.py           # 存档读档
+│  │  │  └─ scene_manager.py       # 场景管理器
+│  │  ├─ debug/
+│  │  │  └─ debugger_tcp_serevr.py # TCP远程调试服务端
+│  │  ├─ plugin/
+│  │  │  ├─ plugin_api.py          # 插件对外API
+│  │  │  └─ plugin_manager.py      # 插件加载管理器
+│  │  ├─ resource/
+│  │  │  ├─ assets_bundle.py       # 自定义资源包格式读写
+│  │  │  └─ resource.py            # 资源管理器
+│  │  ├─ ugc_ui/                   # 用户自定义UI系统
+│  │  │  ├─ ui_components.py
+│  │  │  ├─ ui_element.py
+│  │  │  ├─ ui_loader.py
+│  │  └─ ui/                       # 引擎内置UI（对话框、选项）
+│  │     ├─ dialog_backtext.py
+│  │     ├─ dialog_choice.py
+│  │     └─ dialog_table.py
+│  │  └─ utils/
+│  │     ├─ dpi_tool.py            # DPI适配
+│  │     └─ smooth_tween.py        # 缓动动画
+│  └─ tools/
+│     ├─ assets_bundle_package_build.py
+│     └─ assets_bundle_package_finder.py
+└─ plugin_sdk/                     # 插件开发SDK
+   ├─ AoiStudioPluginBuildTool.py  # 插件打包工具
+   └─pyc_compiler.py              # pyc编译工具

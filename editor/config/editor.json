@@ -2,9 +2,10 @@
     "version": {
         "editor_ui": "SourcePreview",
         "player": "v1.1.0-preview",
-        "abt": "v1.0.0-public"
+        "abt": "v1.0.0"
     },
     "platform": {
         "name": "Windows"
-    }
+    },
+    "theme": "light"
 }

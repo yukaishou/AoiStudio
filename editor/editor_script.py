@@ -16,6 +16,11 @@ class CFGHighlighter(QSyntaxHighlighter):
         cmd_format.setForeground(QColor("#569cd6"))
         self.rules.append((re.compile(r"\b(add|move|switch|animation|remove|affection|wait)\b"), cmd_format))
 
+        # //注释颜色，深绿色
+        comment_format = QTextCharFormat()
+        comment_format.setForeground(QColor("#3c7833"))
+        self.rules.append((re.compile(r"//.*"), comment_format))
+
         # 文件路径
         path_format = QTextCharFormat()
         path_format.setForeground(QColor("#4ec9b0"))
@@ -37,6 +42,9 @@ class PureCFGTextEdit(QTextEdit):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.completer = None
+        # 字体
+        self.setFontFamily("Consolas")
+        self.setFontPointSize(12)
 
     def set_completer(self, completer):
         self.completer = completer

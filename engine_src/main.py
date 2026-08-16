@@ -1,5 +1,7 @@
+import ctypes
 import os
 import shutil
+import sys
 from datetime import datetime
 
 import pygame
@@ -19,6 +21,11 @@ if __name__ == "__main__":
             windll.shcore.SetProcessDpiAwareness(1)
         except Exception:
             pass
+    # 仅Windows执行
+    if sys.platform == "win32":
+        # 设置独立AppUserModelID，让Windows把这个进程当成独立应用，不再归到pygame通用组
+        buf = ctypes.create_unicode_buffer("aoistudio.runtime.game")
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(buf)
 
     pygame.init()
     try:
@@ -39,6 +46,7 @@ if __name__ == "__main__":
         # 安全退出引擎，game可能未实例化
         if game is not None:
             try:
+                game.debug_server.stop()
                 game.quit()
             except Exception:
                 pass

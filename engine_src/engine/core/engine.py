@@ -29,6 +29,8 @@ class Engine:
         :param game_title:
         :param game_size:
         """
+        pygame.display.set_caption(game_title)
+        pygame.display.set_icon(pygame.image.load("icons/AppIcon.png"))
         self.id_index_map = json.load(open("config/dialog_index.json"))
         self.main_menu_config = json.load(open("config/main_menu.json"))
         self.center = [game_size[0] // 2, game_size[1] // 2]
@@ -37,8 +39,6 @@ class Engine:
         self.game_name = game_title
         self.game_size = game_size
         self.screen = pygame.display.set_mode(game_size, pygame.HWSURFACE | pygame.DOUBLEBUF | pygame.SCALED)
-        pygame.display.set_caption(game_title)
-        pygame.display.set_icon(pygame.image.load("icons/AppIcon.png"))
         # 游戏状态
         self.running = True
         self.in_dialog_game = False
@@ -162,7 +162,10 @@ class Engine:
 
     def start_dialog_game(self, is_go_from_save_game=False, save_path=""):
         if not is_go_from_save_game:
-            self.main_menu_bgm.stop()
+            try:
+                self.main_menu_bgm.stop()
+            except:
+                pass
             self.in_dialog_game = True
             self.ugc_ui_manager.clear_ui()
             first_start_dialog_config = json.load(open("config/dialog.json", "r", encoding="utf-8"))

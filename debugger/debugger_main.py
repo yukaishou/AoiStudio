@@ -68,7 +68,7 @@ class TcpClientWorker(QObject):
             except OSError:
                 break
             except Exception as e:
-                self.sig_log.emit(f"[GUI] recv exception {e}")
+                #self.sig_log.emit(f"[GUI] recv exception {e}")
                 break
         self._mark_disconnect()
 
@@ -119,14 +119,13 @@ class DebuggerGuiWindow(QMainWindow):
         super().__init__()
         self.setWindowTitle("AoiStudio 调试器")
         if hasattr(sys, "_MEIPASS"):
-            print(11)
-            print(sys._MEIPASS)
             self.setWindowIcon(QIcon(f"{sys._MEIPASS}/icons/AoiStudio.png"))
         else:
-            print(1)
             self.setWindowIcon(QIcon("AoiStudio.png"))
         self.resize(1050, 700)
         self._snapshot = None
+        # 保存上一次快照json字符串，用来对比是否真的发生变化
+        self._last_snapshot_raw = ""
 
         self.tcp_thread = QThread()
         self.tcp_client = TcpClientWorker(host="127.0.0.1", port=8877)
@@ -260,10 +259,17 @@ class DebuggerGuiWindow(QMainWindow):
     def _on_response(self, resp: dict):
         if resp.get("reply") == "pong":
             return
-        if resp.get("status") == "ok" and "data" in resp:
-            self._snapshot = resp["data"]
-            self._refresh_ui_from_snapshot()
+        # 日志全部打印
         self._append_log(f"[RECV] {resp}")
+
+        if resp.get("status") == "ok" and "data" in resp:
+            new_snap = resp["data"]
+            new_raw = json.dumps(new_snap, ensure_ascii=False, sort_keys=True)
+            # 和上一次快照字符串对比，不一样才刷新UI
+            if new_raw != self._last_snapshot_raw:
+                self._snapshot = new_snap
+                self._last_snapshot_raw = new_raw
+                self._refresh_ui_from_snapshot()
 
     def _on_conn_ok(self):
         self.conn_status_label.setText("🟢 已连接服务器")
@@ -271,7 +277,6 @@ class DebuggerGuiWindow(QMainWindow):
     def _on_conn_lost(self):
         self.conn_status_label.setText("🔴 断开服务器")
         self._append_log("[GUI] 与调试服务断开连接")
-        QMessageBox.warning(self, "连接断开", "与调试服务断开连接")
         sys.exit()
 
     def _append_log(self, text: str):

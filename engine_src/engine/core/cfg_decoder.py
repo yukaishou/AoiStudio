@@ -92,7 +92,15 @@ class CFGDecoder:
             self._resume()
 
     def execute_line(self, line: str):
-        """执行单条指令（内部用）"""
+        """执行单条指令（内部用），支持 // 注释"""
+        # ========== 新增：//注释处理 ==========
+        if "//" in line:
+            line = line.split("//", 1)[0]
+        line = line.strip()
+        if not line:
+            return
+        # =====================================
+
         # 正在等待：不执行，队列会在 _resume 中处理
         if self.is_waiting:
             self.pending_lines.insert(0, line)

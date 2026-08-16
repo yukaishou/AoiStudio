@@ -1,7 +1,10 @@
 {
-  "characters": [
-    {
-      "name": "Mario"
-    }
-  ]
+    "characters": [
+        {
+            "name": "Mario"
+        },
+        {
+            "name": "千绘莉"
+        }
+    ]
 }
