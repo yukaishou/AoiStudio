@@ -46,6 +46,7 @@ if __name__ == "__main__":
         # 安全退出引擎，game可能未实例化
         if game is not None:
             try:
+                game.debug_server.stop()
                 game.quit()
             except Exception:
                 pass

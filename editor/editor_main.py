@@ -1,5 +1,6 @@
 import os
 import shutil
+import sys
 import threading
 import time
 import traceback
@@ -675,7 +676,7 @@ class MainEditorWindow(QMainWindow):
 
         view_menu = menubar.addMenu("项目")
         open_fm_act = QAction("打开项目", self)
-        open_fm_act.triggered.connect(self.open_file_manager_tab)
+        open_fm_act.triggered.connect(lambda :self.open_file_manager_tab())
         view_menu.addAction(open_fm_act)
 
         create_prj_act = QAction("创建项目", self)
@@ -767,8 +768,11 @@ class MainEditorWindow(QMainWindow):
             if isinstance(w, PreviewPage) and w != exclude and w.player:
                 w.player.pause()
 
-    def open_file_manager_tab(self):
-        root_dir = QFileDialog.getExistingDirectory(self, "选择项目目录")
+    def open_file_manager_tab(self,path=None):
+        if path is None:
+            root_dir = QFileDialog.getExistingDirectory(self, "选择项目目录")
+        else:
+            root_dir = path
         if not root_dir:
             return
         fm_page = FileManagerPage(root_dir, self)
@@ -969,6 +973,8 @@ if __name__ == "__main__":
         app.setStyle("Fusion")
         win = MainEditorWindow()
         win.show()
+        if len(sys.argv) >= 2:
+            win.open_file_manager_tab(sys.argv[1])
         app.exec_()
     except Exception as e:
         traceback_ext = traceback.format_exc()
