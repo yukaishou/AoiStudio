@@ -5,14 +5,14 @@ import threading
 import time
 import traceback
 
-from PyQt5.QtWidgets import (QApplication, QMainWindow, QTreeView, QListView,
-                             QSplitter, QMenu, QAction, QInputDialog, QFileDialog,
+from PySide6.QtWidgets import (QApplication, QMainWindow, QTreeView, QListView,
+                             QSplitter, QMenu, QInputDialog, QFileDialog,
                              QMessageBox, QWidget, QVBoxLayout, QHBoxLayout, QFileSystemModel, QLabel,
                              QTabWidget, QTextEdit, QScrollArea, QPushButton, QSlider)
-from PyQt5.QtCore import (Qt, QMimeData, QPoint,
+from PySide6.QtCore import (Qt, QMimeData, QPoint,
                           QDir, QFileInfo, QUrl)
-from PyQt5.QtGui import QIcon, QPixmap
-from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
+from PySide6.QtGui import QIcon, QPixmap, QAction
+from PySide6.QtMultimedia import QMediaPlayer, QAudioOutput
 from common import AoiStudioCrasher
 import json
 from editor import editor_dialog
@@ -21,6 +21,7 @@ from editor import editor_project_settings
 from editor import tool_id_builder
 from editor import  editor_character
 from editor import editor_main_menu_settings
+from editor import editor_doc_view
 import zipfile
 
 
@@ -233,8 +234,11 @@ class PreviewPage(QWidget):
 
         elif ext in audio_exts:
             self.player = QMediaPlayer()
-            self.player.setMedia(QMediaContent(QUrl.fromLocalFile(file_path)))
-            self.player.setVolume(80)
+            self.player.setSource(QUrl.fromLocalFile(file_path))
+            self.audio_output = QAudioOutput()
+            self.player.setAudioOutput(self.audio_output)
+            self.audio_output.setVolume(80)
+
 
             # 标题
             audio_label = QLabel(f"🎵 {os.path.basename(file_path)}")
@@ -274,7 +278,7 @@ class PreviewPage(QWidget):
             self.player.durationChanged.connect(self.on_duration_change)
             self.player.positionChanged.connect(self.on_position_change)
             self.slider.sliderMoved.connect(self.on_slider_moved)
-            self.player.stateChanged.connect(self.on_play_state_changed)
+            self.player.playbackStateChanged.connect(self.on_play_state_changed)
 
             # 组装
             layout.addWidget(audio_label)
@@ -294,7 +298,7 @@ class PreviewPage(QWidget):
     def toggle_play(self):
         if not self.player:
             return
-        if self.player.state() == QMediaPlayer.PlayingState:
+        if self.player.playbackState() == QMediaPlayer.PlaybackState.PlayingState:
             self.player.pause()
         else:
             # 通知主窗口暂停其他所有音频
@@ -304,7 +308,7 @@ class PreviewPage(QWidget):
             self.player.play()
 
     def on_play_state_changed(self, state):
-        if state == QMediaPlayer.PlayingState:
+        if state == QMediaPlayer.PlaybackState.PlayingState:
             self.play_btn.setText("暂停")
         else:
             self.play_btn.setText("播放")
@@ -329,7 +333,8 @@ class PreviewPage(QWidget):
         self.player.setPosition(pos)
 
     def on_volume_change(self, val):
-        self.player.setVolume(val)
+        val = val/100
+        self.audio_output.setVolume(val)
 
     def stop_audio(self):
         if self.player:
@@ -430,13 +435,13 @@ class FileManagerPage(QWidget):
         index = self.tree_view.indexAt(pos)
         menu = QMenu()
         self.build_context_menu(menu, index, self.tree_view)
-        menu.exec_(self.tree_view.viewport().mapToGlobal(pos))
+        menu.exec(self.tree_view.viewport().mapToGlobal(pos))
 
     def list_right_menu(self, pos: QPoint):
         index = self.list_view.indexAt(pos)
         menu = QMenu()
         self.build_context_menu(menu, index, self.list_view)
-        menu.exec_(self.list_view.viewport().mapToGlobal(pos))
+        menu.exec(self.list_view.viewport().mapToGlobal(pos))
 
     def build_context_menu(self, menu, index, view):
         path = self.fs_model.filePath(index) if index.isValid() else self.fs_model.filePath(view.rootIndex())
@@ -639,7 +644,7 @@ class MainEditorWindow(QMainWindow):
             self.editor_config["theme"] = "light"
 
         self.setWindowIcon(QIcon("res/AoiStudio.png"))
-        self.resize(1200, 750)
+        self.resize(800, 540)
 
         if not os.path.exists("caches"):
             os.mkdir("caches")
@@ -703,6 +708,7 @@ class MainEditorWindow(QMainWindow):
 
         aoi_studio_menu = menubar.addMenu("AoiStudio")
         aoi_studio_menu.addAction("安装扩展", self.install_aoi_file)
+        aoi_studio_menu.addAction("文档", self.show_documentation)
 
         # ========== 新增主题子菜单 ==========
         theme_submenu = aoi_studio_menu.addMenu("主题")
@@ -966,16 +972,18 @@ class MainEditorWindow(QMainWindow):
                 print(traceback_ext)
                 QMessageBox.warning(self, "错误", f"安装失败：{str(e)}")
 
+    def show_documentation(self):
+        doc_win = editor_doc_view.DocViewerWindow(self)
+        doc_win.show()
 
 if __name__ == "__main__":
     try:
         app = QApplication([])
-        app.setStyle("Fusion")
         win = MainEditorWindow()
         win.show()
         if len(sys.argv) >= 2:
             win.open_file_manager_tab(sys.argv[1])
-        app.exec_()
+        app.exec()
     except Exception as e:
         traceback_ext = traceback.format_exc()
         AoiStudioCrasher.main(traceback_ext)

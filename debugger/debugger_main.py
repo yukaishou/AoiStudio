@@ -4,18 +4,18 @@ import socket
 import time
 import threading
 
-from PyQt5.QtGui import QIcon
-from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, QPushButton, QLineEdit, QHBoxLayout,
+from PySide6.QtGui import QIcon
+from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, QPushButton, QLineEdit, QHBoxLayout,
                              QSplitter, QTextEdit, QTabWidget, QLabel, QSpinBox, QListWidget, QListWidgetItem,
                              QGroupBox, QFormLayout, QMessageBox)
-from PyQt5.QtCore import Qt, QObject, pyqtSignal, QThread, QTimer
+from PySide6.QtCore import Qt, QObject, Signal, QThread, QTimer
 
 
 class TcpClientWorker(QObject):
-    sig_recv_response = pyqtSignal(dict)
-    sig_log = pyqtSignal(str)
-    sig_conn_lost = pyqtSignal()
-    sig_conn_ok = pyqtSignal()
+    sig_recv_response = Signal(dict)
+    sig_log = Signal(str)
+    sig_conn_lost = Signal()
+    sig_conn_ok = Signal()
 
     def __init__(self, host="127.0.0.1", port=8877):
         super().__init__()
@@ -68,7 +68,6 @@ class TcpClientWorker(QObject):
             except OSError:
                 break
             except Exception as e:
-                #self.sig_log.emit(f"[GUI] recv exception {e}")
                 break
         self._mark_disconnect()
 
@@ -124,7 +123,6 @@ class DebuggerGuiWindow(QMainWindow):
             self.setWindowIcon(QIcon("AoiStudio.png"))
         self.resize(1050, 700)
         self._snapshot = None
-        # 保存上一次快照json字符串，用来对比是否真的发生变化
         self._last_snapshot_raw = ""
 
         self.tcp_thread = QThread()
@@ -259,13 +257,11 @@ class DebuggerGuiWindow(QMainWindow):
     def _on_response(self, resp: dict):
         if resp.get("reply") == "pong":
             return
-        # 日志全部打印
         self._append_log(f"[RECV] {resp}")
 
         if resp.get("status") == "ok" and "data" in resp:
             new_snap = resp["data"]
             new_raw = json.dumps(new_snap, ensure_ascii=False, sort_keys=True)
-            # 和上一次快照字符串对比，不一样才刷新UI
             if new_raw != self._last_snapshot_raw:
                 self._snapshot = new_snap
                 self._last_snapshot_raw = new_raw
@@ -287,14 +283,12 @@ class DebuggerGuiWindow(QMainWindow):
         if snap is None:
             return
 
-        # 只读场景展示
         self.lbl_bg.setText(snap["scene"]["now_background"])
         self.lbl_bgm.setText(snap["scene"]["bgm"])
         self.list_scene_char.clear()
         for c in snap["scene"]["characters"]:
             QListWidgetItem(f"{c['image_path']} | 位置:{c['position']}", self.list_scene_char)
 
-        # 可修改变量
         self.list_affection.clear()
         for k, v in snap["variables"]["characters_affection"].items():
             QListWidgetItem(f"{k} = {v}", self.list_affection)
@@ -302,7 +296,6 @@ class DebuggerGuiWindow(QMainWindow):
         for f in snap["flags"]:
             QListWidgetItem(f, self.list_flags)
 
-        # 只读对话历史
         self.list_history.clear()
         for h in snap["history_text"]:
             spk = h.get("speaker", "")
@@ -347,4 +340,4 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     win = DebuggerGuiWindow()
     win.show()
-    sys.exit(app.exec_())
+    sys.exit(app.exec())

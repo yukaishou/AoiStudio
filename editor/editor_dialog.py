@@ -1,9 +1,9 @@
 import json
 import os
-from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QTreeWidget, QTreeWidgetItem,
+from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QTreeWidget, QTreeWidgetItem,
                              QFormLayout, QLineEdit, QTextEdit, QPushButton,
                              QGroupBox, QScrollArea, QFileDialog, QMessageBox)
-from PyQt5.QtCore import Qt, QTimer
+from PySide6.QtCore import Qt, QTimer
 
 
 class DialogJsonEditor(QWidget):
@@ -413,7 +413,7 @@ class DialogJsonEditor(QWidget):
 # ============ 测试窗口 ============
 if __name__ == "__main__":
     import sys
-    from PyQt5.QtWidgets import QApplication, QMainWindow
+    from PySide6.QtWidgets import QApplication, QMainWindow
 
     class TestMainWin(QMainWindow):
         """模拟你的主窗口，实现 build_id_file，实际项目删掉这个类"""
@@ -469,4 +469,4 @@ if __name__ == "__main__":
     editor.set_data(sample)
 
     win.show()
-    sys.exit(app.exec_())
+    sys.exit(app.exec())

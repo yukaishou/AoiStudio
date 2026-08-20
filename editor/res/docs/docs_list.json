@@ -1,0 +1,22 @@
+{
+    "document_list": [
+        {
+            "doc_id": "cfg_command",
+            "display_name": "CFG 脚本文档",
+            "file_name": "cfg_command.json",
+            "category": "脚本参考"
+        },
+        {
+            "doc_id": "editor_operation",
+            "display_name": "编辑器操作文档",
+            "file_name": "editor_operation.json",
+            "category": "使用指南"
+        },
+        {
+            "doc_id": "dialog_editor_operation",
+    "display_name": "剧本编辑器使用手册",
+    "file_name": "editor_dialogue_operation.json",
+    "category": "编辑器文档"
+}
+    ]
+}

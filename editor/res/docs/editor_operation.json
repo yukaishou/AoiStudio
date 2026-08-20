@@ -1,0 +1,206 @@
+{
+    "title": "AoiStudio编辑器使用手册",
+    "version": "",
+    "blocks": [
+        {
+            "type": "paragraph",
+            "content": "AoiStudio Editor 是面向GalGame的可视化剧本编辑器，支持项目管理、对话编辑、CFG演出脚本编写、角色配置、一键打包输出游戏程序。本文档讲解编辑器基础操作、各个面板功能、菜单功能、常见问题。"
+        },
+        {
+            "type": "warning",
+            "content": "注意：编辑器所有路径**禁止中文路径**，项目存放路径全部使用英文；.aoi扩展包为引擎安装包，包含播放器、打包工具、调试器、项目插件。"
+        },
+        {
+            "type": "item_entry",
+            "name": "新建项目",
+            "summary": "创建全新游戏项目工程",
+            "usage": "顶部菜单栏 → 项目 → 创建项目",
+            "details": [
+                "1. 先选择项目存放的父文件夹",
+                "2. 输入项目名称（英文，不要空格）",
+                "3. 编辑器自动复制模板工程并初始化Game.json配置",
+                "4. 创建完成自动打开【资源管理器】标签页",
+                "项目目录结构：config、res、plugins，res存放图片、音频、剧本json、cfg脚本"
+            ],
+            "example": ""
+        },
+        {
+            "type": "item_entry",
+            "name": "打开项目",
+            "summary": "打开已存在的工程文件夹",
+            "usage": "顶部菜单栏 → 项目 → 打开项目",
+            "details": [
+                "选择游戏项目根目录（包含config文件夹的那一层）",
+                "打开后会创建【资源管理器】标签",
+                "只有打开项目之后，剧本编辑、角色编辑、打包、预览游戏功能才可用"
+            ],
+            "example": ""
+        },
+        {
+            "type": "item_entry",
+            "name": "资源管理器",
+            "summary": "项目文件树，管理图片、音频、剧本、脚本",
+            "usage": "打开项目自动进入；左侧目录树，右侧文件列表",
+            "details": [
+                "右键菜单：新建文件夹 / 新建对话(json剧本) / 新建脚本(.cfg)",
+                "支持复制、剪切、粘贴、删除、重命名、导入导出文件",
+                "单击文件会自动打开预览标签",
+                "json剧本文件右键 →【对话编辑】打开剧本编辑器",
+                "cfg脚本文件右键 →【脚本编辑】打开CFG编辑器",
+                "图片、音频、txt/json会打开内置预览页面，音频支持播放暂停调节音量"
+            ],
+            "example": ""
+        },
+        {
+            "type": "item_entry",
+            "name": "新建对话剧本",
+            "summary": "创建json格式对话剧本文件",
+            "usage": "资源管理器右键 → 新建对话",
+            "details": [
+                "输入文件名、剧本ID（jump指令需要使用该id跳转剧本）",
+                "生成 {\"id\":\"xxx\",\"dialogs\":[]} 基础剧本模板",
+                "右键文件选择【对话编辑】进入可视化剧本编辑界面"
+            ],
+            "example": ""
+        },
+        {
+            "type": "item_entry",
+            "name": "新建CFG演出脚本",
+            "summary": "创建cfg演出脚本，执行场景动画、等待、跳转、好感操作",
+            "usage": "资源管理器右键 → 新建脚本",
+            "details": [
+                "后缀为.cfg，支持//行注释",
+                "右键文件选择【脚本编辑】打开CFG命令编辑器",
+                "脚本可以被dialogue jump指令调用执行演出逻辑"
+            ],
+            "example": ""
+        },
+        {
+            "type": "item_entry",
+            "name": "对话编辑器",
+            "summary": "可视化编辑json对话剧本，编写台词、角色、分支条件",
+            "usage": "剧本json右键 → 对话编辑",
+            "details": [
+                "编辑完成自动保存回原json文件",
+                "可以添加对话行，设置说话角色名、文本内容、表情、跳转标记",
+                "支持条件分支、flag标记控制剧情走向",
+                "修改剧本之后建议执行【构建剧本索引】更新id映射表"
+            ],
+            "example": ""
+        },
+        {
+            "type": "item_entry",
+            "name": "CFG脚本编辑器",
+            "summary": "编写CFG演出指令脚本",
+            "usage": "cfg文件右键 → 脚本编辑",
+            "details": [
+                "编辑器提供命令提示，参考CFG脚本命令参考文档",
+                "支持wait、add、move、animation、switch、affection、jump等全部指令",
+                "保存后供游戏引擎运行调用"
+            ],
+            "example": ""
+        },
+        {
+            "type": "item_entry",
+            "name": "角色编辑",
+            "summary": "维护项目config/characters.json角色配置",
+            "usage": "菜单栏【文件】→编辑角色",
+            "details": [
+                "新增/删除角色，配置角色显示名称、默认立绘、颜色",
+                "好感度系统数据由这个配置驱动",
+                "affection指令读取这里定义的角色名进行增减好感"
+            ],
+            "example": ""
+        },
+        {
+            "type": "item_entry",
+            "name": "项目设置",
+            "summary": "修改Game.json全局游戏配置",
+            "usage": "菜单栏【项目】→项目设置",
+            "details": [
+                "修改游戏窗口分辨率、启动logo、启动画面、引擎版本等参数",
+                "仅打开项目之后可以使用"
+            ],
+            "example": ""
+        },
+        {
+            "type": "item_entry",
+            "name": "主菜单设置",
+            "summary": "编辑main_menu.json自定义游戏主UI菜单",
+            "usage": "菜单栏【项目】→主菜单设置",
+            "details": [
+                "配置主菜单背景、按钮文字、颜色布局",
+                "保存自动写入config/main_menu.json"
+            ],
+            "example": ""
+        },
+        {
+            "type": "item_entry",
+            "name": "构建剧本索引",
+            "summary": "扫描res目录所有剧本，生成dialog_index.json",
+            "usage": "菜单栏【文件】→构建剧本索引",
+            "details": [
+                "收集全部剧本id和文件路径映射",
+                "jump dialogue_file id:xxx 需要依靠这个索引表才能跳转",
+                "新增/修改剧本ID之后必须执行一次构建索引"
+            ],
+            "example": ""
+        },
+        {
+            "type": "item_entry",
+            "name": "预览游戏",
+            "summary": "启动Debug播放器运行当前项目测试",
+            "usage": "菜单栏【预览】→预览游戏",
+            "details": [
+                "前提：已经安装debug_player调试播放器扩展包",
+                "会同时启动游戏客户端和调试器程序",
+                "修改剧本、cfg脚本后重新点预览即可加载最新工程"
+            ],
+            "example": ""
+        },
+        {
+            "type": "item_entry",
+            "name": "打包项目",
+            "summary": "使用ABT(AoiStudioBuildTool)导出完整发布版游戏",
+            "usage": "菜单栏【项目】→打包项目",
+            "details": [
+                "1. 需要提前安装 .aoi 的ABT打包工具扩展",
+                "2. 选择输出文件夹，工具自动生成可分发exe游戏包",
+                "3. 输出产物可以直接发给其他人运行，不需要编辑器"
+            ],
+            "example": ""
+        },
+        {
+            "type": "item_entry",
+            "name": "主题切换",
+            "summary": "编辑器浅色/暗色界面切换",
+            "usage": "菜单栏【AoiStudio】→主题 →浅色主题 / 暗色主题",
+            "details": [
+                "切换后自动保存配置到config/editor.json，下次打开编辑器沿用上次主题"
+            ],
+            "example": ""
+        },
+        {
+            "type": "item_entry",
+            "name": "安装扩展(.aoi)",
+            "summary": "安装播放器、打包工具、调试器、项目插件",
+            "usage": "菜单栏【AoiStudio】→安装扩展",
+            "details": [
+                "player：游戏运行播放器",
+                "abt：项目打包工具",
+                "debugger：调试器",
+                "plugin：项目插件，安装时需要已经打开项目",
+                "安装信息写入caches缓存目录，版本号更新编辑器标题栏"
+            ],
+            "example": ""
+        },
+        {
+            "type": "warning",
+            "content": "常见问题：\n1.预览游戏灰色不可用：没有打开项目，或者未安装debug_player扩展\n2.jump id:xxx跳转失效：没有执行【构建剧本索引】\n3.打包按钮灰色：未安装ABT打包扩展包\n4.编辑器崩溃：会弹出AoiStudioCrasher崩溃窗口输出堆栈，排查脚本/配置错误\n5.音频预览没有声音：Qt多媒体后端问题，重新打开预览标签页"
+        },
+        {
+            "type": "code_block",
+            "content": "//编辑器标准工作流程\n1 创建项目 → 2新建剧本json →3新建cfg演出脚本 →4编辑对话与cfg命令\n5 构建剧本索引 →6预览游戏调试 →7配置角色、主菜单、游戏设置 →8打包项目发布"
+        }
+    ]
+}

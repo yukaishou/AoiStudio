@@ -1,10 +1,10 @@
 import json
 import os
-from PyQt5.QtWidgets import (QApplication, QWidget, QVBoxLayout, QHBoxLayout,
+from PySide6.QtWidgets import (QApplication, QWidget, QVBoxLayout, QHBoxLayout,
                              QListWidget, QListWidgetItem, QLineEdit, QPushButton,
                              QLabel, QMessageBox, QMainWindow)
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QFont, QIcon
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QFont, QIcon
 
 
 class CharacterEditorWidget(QMainWindow):
@@ -161,4 +161,4 @@ if __name__ == "__main__":
     win.centralWidget().layout().addWidget(test_btn)
 
     win.show()
-    app.exec_()
+    app.exec()

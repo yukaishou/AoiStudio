@@ -1,8 +1,8 @@
 import re
-from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QTextEdit,
+from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QTextEdit,
                              QPushButton, QCompleter)
-from PyQt5.QtCore import Qt, QStringListModel
-from PyQt5.QtGui import QSyntaxHighlighter, QTextCharFormat, QColor
+from PySide6.QtCore import Qt, QStringListModel
+from PySide6.QtGui import QSyntaxHighlighter, QTextCharFormat, QColor
 
 
 # ====================== 语法高亮（稳定无BUG） ======================

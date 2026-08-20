@@ -1,9 +1,9 @@
 import json
 import os
-from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QFormLayout,
+from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QFormLayout,
                              QLineEdit, QSpinBox, QCheckBox, QPushButton,
                              QHBoxLayout, QVBoxLayout, QFileDialog, QMessageBox)
-from PyQt5.QtCore import Qt
+from PySide6.QtCore import Qt
 
 # ===================== 配置文件路径常量（请勿修改） =====================
 GAME_CONFIG_PATH = "config/game.json"
@@ -172,7 +172,7 @@ if __name__ == "__main__":
     app = QApplication([])
     window = ProjectConfigEditor()
     window.show()
-    app.exec_()
+    app.exec()
 
 # ==================== 在你现有程序中如何调用 ====================
 """

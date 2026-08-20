@@ -1,8 +1,8 @@
 import json
 import os
-from PyQt5.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
+from PySide6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
                              QLineEdit, QPushButton, QLabel, QFileDialog, QTextEdit, QGroupBox)
-from PyQt5.QtCore import Qt
+from PySide6.QtCore import Qt
 
 
 class ConfigPopupWindow(QMainWindow):

@@ -1,0 +1,174 @@
+{
+    "title": "剧本JSON编辑器使用手册",
+    "version": "",
+    "blocks": [
+        {
+            "type": "paragraph",
+            "content": "DialogJsonEditor 剧本JSON可视化编辑器，用于编辑游戏对话剧本文件（*.json）。支持对话条目、多分支选项、条件过滤condition、绑定CFG演出脚本，保存自动更新全局剧本索引dialog_index.json。"
+        },
+        {
+            "type": "warning",
+            "content": "1. 所有修改必须点击【应用XX修改】才会写入内存数据，只填表单不会生效；\n2. condition条件为空时存储为null；\n3. 保存文件会自动调用构建剧本索引，jump跳转依赖该索引；\n4. speaker、voice、script字段值为\"None\"代表不执行。"
+        },
+        {
+            "type": "item_entry",
+            "name": "打开剧本编辑器",
+            "summary": "从资源管理器进入剧本编辑界面",
+            "usage": "资源管理器 → 剧本json文件右键 →【对话编辑】",
+            "details": [
+                "加载磁盘上的剧本json，解析到编辑器内存",
+                "左侧树视图展示全部对话与选项，右侧表单编辑选中项",
+                "打开文件后 editing_file_path 记录源文件路径，标记为已编辑模式"
+            ],
+            "example": ""
+        },
+        {
+            "type": "item_entry",
+            "name": "新建剧本",
+            "summary": "创建空白剧本结构 {id:\"\",dialogs:[]}",
+            "usage": "左下角按钮【新建剧本】",
+            "details": [
+                "触发脏检查，如果有未保存修改会弹窗提示保存/丢弃/取消",
+                "清空表单、清空树视图，is_edit_project置为false，未绑定磁盘文件",
+                "新建完成需要执行【保存JSON】选择路径写入磁盘"
+            ],
+            "example": ""
+        },
+        {
+            "type": "item_entry",
+            "name": "加载JSON",
+            "summary": "手动从磁盘读取剧本json文件",
+            "usage": "左下角按钮【加载JSON】",
+            "details": [
+                "先执行脏检查，防止丢失当前编辑内容",
+                "读取后执行 normalize_data 补齐缺失字段（speaker、voice、options、condition等）",
+                "自动填充顶层ID，刷新左侧树列表"
+            ],
+            "example": ""
+        },
+        {
+            "type": "item_entry",
+            "name": "保存JSON",
+            "summary": "将内存中的剧本数据写入磁盘文件",
+            "usage": "左下角按钮【保存JSON】",
+            "details": [
+                "已打开旧文件：直接覆盖原文件；新建未保存文件：弹出另存对话框",
+                "保存成功清除脏标记 is_dirty=false",
+                "保存完成自动调用 build_id_file，刷新 config/dialog_index.json",
+                "保存失败弹出错误提示，不清除脏标记"
+            ],
+            "example": ""
+        },
+        {
+            "type": "item_entry",
+            "name": "刷新索引",
+            "summary": "手动构建剧本索引映射表",
+            "usage": "左下角按钮【刷新索引】",
+            "details": [
+                "调用主窗口 build_id_file，扫描项目res目录全部剧本",
+                "生成 config/dialog_index.json，jump id:xxx 跳转依赖此文件",
+                "修改剧本ID、新增剧本、删除剧本后建议手动点一次刷新索引"
+            ],
+            "example": ""
+        },
+        {
+            "type": "item_entry",
+            "name": "顶层剧本ID",
+            "summary": "剧本全局唯一ID，供 jump dialogue id:xxx 跳转",
+            "usage": "右侧表单填写【顶层ID】→点击【应用ID修改】",
+            "details": [
+                "ID只允许英文、数字、下划线，不要空格中文",
+                "修改ID后左侧树标题会同步刷新",
+                "必须点【应用ID修改】才会更新内存数据，仅输入文本无效"
+            ],
+            "example": ""
+        },
+        {
+            "type": "item_entry",
+            "name": "新增对话",
+            "summary": "新增一条对话节点，包含speaker/text/voice/script与options数组",
+            "usage": "左侧按钮【新增对话】",
+            "details": [
+                "追加一条空白对话，默认 voice=\"None\" script=\"None\" options=[]",
+                "新增后树视图自动刷新，脏标记is_dirty置true",
+                "选中对话条目，右侧【对话条目】表单编辑内容，编辑完点【应用对话修改】"
+            ],
+            "example": ""
+        },
+        {
+            "type": "item_entry",
+            "name": "对话字段说明",
+            "summary": "一条dialog对话节点全部字段含义",
+            "usage": "左侧树选中对话节点，右侧【对话条目】表单",
+            "details": [
+                "speaker：说话角色名称，和characters.json角色配置对应",
+                "text：对话显示正文，支持换行，QTextEdit多行输入",
+                "voice：语音资源路径，\"None\"代表不播放语音",
+                "script：对话显示完成后自动执行的CFG脚本命令，多条用\\n换行；\"None\"不执行脚本"
+            ],
+            "example": "speaker:千绘莉\ntext:今天天气不错。\nvoice:voice/chieri_01.wav\nscript:switch bg file:bg/school.png"
+        },
+        {
+            "type": "item_entry",
+            "name": "新增选项",
+            "summary": "为当前选中对话增加玩家可点击选择分支",
+            "usage": "先选中父对话节点 → 左侧按钮【新增选项】",
+            "details": [
+                "必须先选中对话节点，否则弹窗提示",
+                "新增选项挂载在该对话的options数组，树视图作为子节点展示",
+                "选中选项子节点，在【选项】表单编辑，完成点击【应用选项修改】"
+            ],
+            "example": ""
+        },
+        {
+            "type": "item_entry",
+            "name": "选项字段说明",
+            "summary": "option选项分支全部字段含义，支持条件condition",
+            "usage": "左侧树选中选项子节点，右侧【选项】表单",
+            "details": [
+                "text：选项按钮显示文字",
+                "next_dialog：跳转目标，两种格式 id:剧本ID / file:完整json路径",
+                "script：点击选项之后执行的CFG脚本，多条用\\n换行；\"None\"不执行脚本",
+                "condition：显示条件，条件表达式满足才显示本选项；留空=无条件，内部存储为null"
+            ],
+            "example": "text:去找柚希\nnext_dialog:id:yukizone\nscript:affection 柚希 add 3\ncondition:flag:met_yuki == true"
+        },
+        {
+            "type": "item_entry",
+            "name": "删除选中",
+            "summary": "删除选中对话节点 或者 删除选中选项节点",
+            "usage": "树选中对话 / 选项 →【删除选中】按钮",
+            "details": [
+                "选中对话：整条对话连同下属全部options一起删除",
+                "选中选项：仅删除这一条分支，父对话保留",
+                "删除后清空右侧表单，设置脏标记，刷新树视图"
+            ],
+            "example": ""
+        },
+        {
+            "type": "item_entry",
+            "name": "脏标记机制",
+            "summary": "is_dirty 检测内存数据是否未保存到磁盘",
+            "usage": "新建、加载文件的时候自动弹窗询问保存",
+            "details": [
+                "新增、删除、应用修改后自动置 is_dirty = true",
+                "保存成功才置 is_dirty = false",
+                "新建、加载JSON操作时触发弹窗：保存 / 丢弃修改 / 取消操作",
+                "取消则放弃本次新建/加载操作，回到当前编辑状态"
+            ],
+            "example": ""
+        },
+        {
+            "type": "warning",
+            "content": "常见问题\n1.修改表单之后树没有变化：忘记点【应用对话修改】或者【应用选项修改】；编辑器表单不会自动同步内存。\n2.跳转不生效：保存剧本之后没有刷新剧本索引；next_dialog格式错误，必须 id:xxx 或 file:xxx。\n3.选项总是不显示：condition条件表达式写错；空条件不要填任何字符。\n4.script多行脚本：使用换行符分隔多条CFG指令。\n5.打开剧本部分字段丢失：旧版剧本缺少字段，normalize_data会自动补齐默认值。"
+        },
+        {
+            "type": "code_block",
+            "content": "//标准剧本编辑工作流\n1.资源管理器右键打开剧本json进入编辑器\n2.修改顶层剧本ID，应用ID修改\n3.新增对话，填写speaker/text/voice/script，应用对话修改\n4.选中对话，新增选项，填写text、next_dialog、script、condition，应用选项修改\n5.保存JSON，自动生成dialog_index.json\n6.预览游戏测试跳转与分支逻辑"
+        },
+        {
+            "type": "code_block",
+            "content": "//剧本JSON基础结构\n{\n  \"id\": \"story_01\",\n  \"dialogs\": [\n    {\n      \"speaker\": \"柚希\",\n      \"text\": \"你来了。\",\n      \"voice\": \"None\",\n      \"script\": \"None\",\n      \"options\": [\n        {\n          \"text\": \"和她聊天\",\n          \"next_dialog\": \"id:chat_yuki\",\n          \"script\": \"affection 柚希 add 2\",\n          \"condition\": null\n        }\n      ]\n    }\n  ]\n}"
+        }
+    ]
+}

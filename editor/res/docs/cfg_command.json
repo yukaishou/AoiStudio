@@ -1,0 +1,131 @@
+{
+    "title": "CFG脚本命令参考",
+    "version": "",
+    "blocks": [
+        {
+            "type": "paragraph",
+            "content": "AoiStudio CFG 演出脚本，用于驱动剧本场景、角色动画、好感度、剧本跳转等逻辑。支持行注释 //，wait 实现延时演出。"
+        },
+        {
+            "type": "item_entry",
+            "name": "add",
+            "summary": "添加对象：角色、背景、flag标记",
+            "usage": "add <type> [参数...]",
+            "details": [
+                "add character：添加角色立绘",
+                "add background：添加背景图层",
+                "add flag：添加剧情标记flag",
+                "角色坐标 x y 支持浮点数"
+            ],
+            "example": "add character file:char/main.png 200 300\nadd background file:bg/classroom.png\nadd flag met_yuuki"
+        },
+        {
+            "type": "item_entry",
+            "name": "move",
+            "summary": "角色平滑移动，支持缓动动画",
+            "usage": "move character <索引> <x> <y> <缓动类型> <时长>",
+            "details": [
+                "仅支持 character 类型",
+                "索引从0开始",
+                "x,y：目标坐标，浮点",
+                "缓动字符串透传给角色move_to接口",
+                "时长单位：秒"
+            ],
+            "example": "move character 0 520 280 ease_out 1.2"
+        },
+        {
+            "type": "item_entry",
+            "name": "animation",
+            "summary": "角色执行动画效果：透明度、缩放、抖动、跳跃、闪烁",
+            "usage": "animation character <索引> <动画名> [参数...]",
+            "details": [
+                "fade_to <alpha> <dur>：修改透明度 0~1",
+                "scale_to <w> <h> <dur>：缩放角色宽高",
+                "shake <amplitude> <dur>：屏幕抖动",
+                "jump <height> <dur>：原地弹跳",
+                "start_blink <interval>：开启闪烁，间隔秒",
+                "stop_blink：停止闪烁"
+            ],
+            "example": "animation character 0 fade_to 0.3 0.8\nanimation character 0 shake 25 0.6\nanimation character 0 start_blink 0.35"
+        },
+        {
+            "type": "item_entry",
+            "name": "switch",
+            "summary": "切换背景、BGM、角色立绘，支持过渡动画",
+            "usage": "switch <target> [参数...]",
+            "details": [
+                "switch background <path> <过渡名> <时长>：切换背景图",
+                "switch bgm <path> <淡入时长>：切换背景音乐",
+                "switch character <索引> unused <path> <fade时长> <scale时长>：替换角色立绘"
+            ],
+            "example": "switch background file:bg/night.png fade 1.5\nswitch bgm file:bgm/sad.ogg 2.0\nswitch character 0 unused file:char/sad.png 0.7 0.7"
+        },
+        {
+            "type": "item_entry",
+            "name": "affection",
+            "summary": "角色好感度控制，增加/减少/设置数值",
+            "usage": "affection <角色名> add|reduce|set <数值>",
+            "details": [
+                "add：增加好感",
+                "reduce：扣减好感",
+                "set：直接设置为该值",
+                "数值为整数"
+            ],
+            "example": "affection 柚希 add 10\naffection 千绘莉 set 50\naffection 柚希 reduce 5"
+        },
+        {
+            "type": "item_entry",
+            "name": "wait",
+            "summary": "脚本延时等待（非阻塞，不冻结引擎）",
+            "usage": "wait <秒数>",
+            "details": [
+                "引擎每帧必须调用 decoder.update_wait()",
+                "wait会暂停后续CFG指令执行，等待时间走完继续队列",
+                "参数支持浮点数，不能为负数"
+            ],
+            "example": "wait 2.0\nwait 0.5"
+        },
+        {
+            "type": "item_entry",
+            "name": "remove",
+            "summary": "移除角色或者flag标记",
+            "usage": "remove character <索引>\nremove flag <flag_name>",
+            "details": [
+                "remove character：从场景移除指定索引角色",
+                "remove flag：删除一个剧情flag标记"
+            ],
+            "example": "remove character 0\nremove flag met_yuuki"
+        },
+        {
+            "type": "item_entry",
+            "name": "jump",
+            "summary": "剧本跳转：跳外部剧本文件 / 跳当前剧本指定对话行号",
+            "usage": "jump dialogue_file id:<剧本id>|file:<路径>\njump dialogue_index <行索引>",
+            "details": [
+                "jump dialogue_file id:xxx 通过id索引映射加载剧本",
+                "jump dialogue_file file:xxx 通过文件路径加载剧本",
+                "jump dialogue_index 直接修改当前剧本对话索引并重新开始",
+                "跳转后自动 start_dialogue() 启动对话"
+            ],
+            "example": "jump dialogue_file id:scene02\njump dialogue_file file:script/scene02.cfg\njump dialogue_index 12"
+        },
+        {
+            "type": "item_entry",
+            "name": "quit",
+            "summary": "直接退出程序",
+            "usage": "quit",
+            "details": [
+                "调用 sys.exit() 直接终止进程"
+            ],
+            "example": "quit"
+        },
+        {
+            "type": "warning",
+            "content": "remove character 使用list.remove(index对象)，如果角色已经被移除会抛出异常，上层脚本需要保证索引有效。jump dialogue_index直接修改下标，不会做边界检查。"
+        },
+        {
+            "type": "code_block",
+            "content": "// CFG完整示例脚本\nadd character file:char/youxi.png 300 320\nwait 1.0\naffection 柚希 add 5\nanimation character 0 fade_to 0.6 0.8\nwait 1.5\njump dialogue_index 8"
+        }
+    ]
+}
