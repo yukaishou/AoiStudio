@@ -185,6 +185,7 @@ class BaseCharacter:
         self.character_image.draw(screen)
 
     def move_to(self, position, move_type="linear", speed=1.0):
+        self.engine.event.emit("character_move_to", {"character": self, "position": position, "move_type": move_type, "speed": speed})  # 触发事件
         # 传入逻辑坐标
         self.logic_target_position = position.copy()
         self.move_type = move_type
@@ -193,6 +194,7 @@ class BaseCharacter:
 
     # ============ 对外动画API ============
     def fade_to(self, alpha, duration=0.3, ease_func=None):
+        self.engine.event.emit("character_fade_to", {"character": self, "alpha": alpha, "duration": duration, "ease_func": ease_func})  # 触发事件
         # 执行手动淡入淡出时自动停止闪烁，避免动画冲突
         self.stop_blink()
         self.target_alpha = alpha
@@ -203,6 +205,7 @@ class BaseCharacter:
         self._alpha_finished = False
 
     def scale_to(self, scale_x, scale_y, duration=0.3, ease_func=None):
+        self.engine.event.emit("character_scale_to", {"character": self, "scale_x": scale_x, "scale_y": scale_y, "duration": duration, "ease_func": ease_func})  # 触发事件
         # 传入逻辑缩放比例
         self.logic_target_scale[0] = scale_x
         self.logic_target_scale[1] = scale_y
@@ -213,6 +216,7 @@ class BaseCharacter:
         self._scale_finished = False
 
     def shake(self, magnitude=8.0, duration=0.5):
+        self.engine.event.emit("character_shake", {"character": self, "magnitude": magnitude, "duration": duration})  # 触发事件
         # 传入逻辑幅度
         self.shake_active = True
         self.logic_shake_magnitude = magnitude
@@ -220,11 +224,13 @@ class BaseCharacter:
         self.shake_max_duration = duration
 
     def start_blink(self, interval=0.18):
+        self.engine.event.emit("character_start_blink",{"character":self, "interval":interval})  # 触发事件
         self.blink_active = True
         self.blink_interval = interval
         self.blink_timer = 0.0
 
     def stop_blink(self):
+        self.engine.event.emit("character_stop_blink",{"character":self})  # 触发事件
         self.blink_active = False
 
     def is_move_finished(self):
@@ -232,6 +238,7 @@ class BaseCharacter:
 
     # ========= GAL演出跳跃函数 =========
     def jump(self, jump_height=60, duration=0.4):
+        self.engine.event.emit("jump", {"jump_height": jump_height, "duration": duration})  # 触发事件
         """
         GalGame角色演出跳一跳，只视觉上浮下落，逻辑坐标不变
         :param jump_height: 跳跃最大高度(逻辑像素)
@@ -253,6 +260,7 @@ class BaseCharacter:
         :param fade_out: 淡出耗时(秒)
         :param fade_in: 淡入耗时(秒)
         """
+        self.engine.event.emit("change_sprite", {"image_path": image_path, "fade_out": fade_out, "fade_in": fade_in})  # 触发事件
         if self._sprite_switching:
             return
         self._sprite_switching = True

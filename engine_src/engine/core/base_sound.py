@@ -12,6 +12,7 @@ class BaseSound:
         self.engine = engine
 
     def play(self,loops):
+        self.engine.event.emit("sound_play",{"sound_path":self.path,"loops":loops})
         self.sound.play(loops= loops)
 
     def update(self):
@@ -24,13 +25,16 @@ class BaseSound:
 
 
     def fade(self,target,speed):
+        self.engine.event.emit("sound_fade",{"sound_path":self.path,"target_volume":target,"speed":speed})
         self.target_volume = target
         self.speed = speed
 
     def fade_out(self,speed):
+        self.engine.event.emit("sound_fade_out",{"sound_path":self.path,"speed":speed})
         self.is_fade_out = True
         self.fade(0,speed)
 
     def fade_in(self,speed):
+        self.engine.event.emit("sound_fade_in",{"sound_path":self.path,"speed":speed})
         self.play(-1)
         self.fade(0.5,speed)

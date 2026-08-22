@@ -56,6 +56,7 @@ class Dialogue:
         return "None" if val in ("", "None") else val
 
     def load_dialogue(self, file_path):
+        self.engine.event.emit("dialogue_load",{"dialogue_file_path":file_path})
         self.this_dialogue_is_finished = False
         self.current_dialogue_index = 0
         self.dialogue = self.engine.resource_manager.load_json_file(file_path)
@@ -63,6 +64,7 @@ class Dialogue:
         return self.dialogue
 
     def _on_option_selected(self, opt_index: int):
+        self.engine.event.emit("dialogue_option_selected", {"opt_index":opt_index})
         """统一选项回调入口"""
         self.is_choice_active = False
         self.engine.dialog_choice.set_active(False)
@@ -89,6 +91,8 @@ class Dialogue:
             self.start_dialogue()
 
     def start_dialogue(self, not_choice=False):
+        self.engine.event.emit("dialogue_start",{"dialogue_index":self.current_dialogue_index,"not_choice":not_choice})
+        self.auto_mode = not not_choice
         if self.dialogue is None or len(self.dialogue) == 0:
             return
         if self.engine.cfg_decoder.is_waiting:
@@ -190,6 +194,8 @@ class Dialogue:
             self.current_dialogue_index += 1
 
     def on_text_complete(self):
+        self.engine.event.emit("dialogue_text_complete",{"dialogue_index":self.current_dialogue_index})
+        """文本结束回调"""
         if self.is_choice_active:
             self.engine.dialog_choice.set_active(True)
         else:
@@ -197,20 +203,26 @@ class Dialogue:
                 self.start_dialogue()
 
     def on_next(self):
+        self.engine.event.emit("dialogue_next",{"dialogue_index":self.current_dialogue_index})
         self.start_dialogue()
 
 
     def set_affection(self, name, value):
+        self.engine.event.emit("dialogue_set_affection",{"name":name,"value":value})
         """设置角色好感，覆盖原有值"""
         self.characters_affection[name] = value
 
     def add_affection(self, name, value):
+        self.engine.event.emit("dialogue_add_affection",{"name":name,"value":value})
         """增加好感，不存在该角色则初始为0再加"""
         self.characters_affection[name] = self.characters_affection.get(name, 0) + value
 
     def reduce_affection(self, name, value):
+        self.engine.event.emit("dialogue_reduce_affection",{"name":name,"value":value})
         """减少好感，不存在角色跳过"""
         self.characters_affection[name] = self.characters_affection.get(name, 0) - value
 
     def add_flag(self,name):
+        self.engine.event.emit("dialogue_add_flag",{"name":name})
+        """添加flag，覆盖原有值"""
         self.flags.add(name)

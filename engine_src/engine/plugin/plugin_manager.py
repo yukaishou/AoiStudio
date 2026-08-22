@@ -14,6 +14,7 @@ class PluginManager:
         self.plugin_api = PluginAPI(self.engine)
 
     def load_plugin(self, path):
+        self.engine.event.emit("plugin_load", {"plugin_path": path})
         if not os.path.exists("plugins_runtime"):
             os.mkdir("plugins_runtime")
         if path.endswith(".aoi"):

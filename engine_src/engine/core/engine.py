@@ -20,6 +20,7 @@ from engine_src.engine.ugc_ui import ui_loader
 from engine_src.engine.plugin import plugin_manager
 from engine_src.engine.core import log
 from engine_src.engine.debug import debugger_tcp_serevr
+from engine_src.engine.core.event import event_bus
 
 
 class Engine:
@@ -57,9 +58,10 @@ class Engine:
         self.dialog = dialogue.Dialogue(self)
         self.cfg_decoder = cfg_decoder.CFGDecoder(self)
         self.debug_server = debugger_tcp_serevr.DebugServerMain(self)
+        self.event = event_bus.EventBus()
 
         # 初始化 UI
-        self.ugc_ui_manager = ui_manager.UIManager(self.game_size)
+        self.ugc_ui_manager = ui_manager.UIManager(self.game_size,self)
         self.dialog_table = dialog_table.GalDialogBox(self.screen, 40, game_size[1] - 180, game_size[0] - 80, 160, self.dialog)
         self.dialog_choice = dialog_choice.GalChoiceUI(self.screen)
         self.dialog_choice.set_panel_pos(game_size[0] * 0.5 - 200, game_size[1] * 0.5 - 100)
@@ -69,7 +71,10 @@ class Engine:
         self.main_menu_ui = ui_loader_.load_from_file(self.main_menu_config["main_menu_ui_path"][5:])
         self.save_game_ui = ui_loader_.load_from_file(self.main_menu_config["save_game_ui_path"][5:])
         self.settings = ui_loader_.load_from_file(self.main_menu_config["settings_ui_path"][5:])
-        self.main_menu_bgm = self.resource_manager.load_sound(self.main_menu_config["bgm"][5:])
+        try:
+            self.main_menu_bgm = self.resource_manager.load_sound(self.main_menu_config["bgm"][5:])
+        except:
+            log.log(2, "[ENGINE] 加载背景音乐失败")
         try:
             self.main_menu_background = image.Image(self.resource_manager.load_image(self.main_menu_config["background"][5:]), None, [0, 0], [1, 1], "fill", self.center, True)
         except:
@@ -157,10 +162,12 @@ class Engine:
                 self.dialog_choice.render()
                 self.dialog_backlog.draw(self.screen)
             self.plugin_manager.update()
+            self.event.update()
             #文字为黄色
             self.screen.blit(self.fps_font.render("FPS: " + str(int(self.clock.get_fps())), True, (200, 200, 0)), (10, 10))
 
     def start_dialog_game(self, is_go_from_save_game=False, save_path=""):
+        self.event.emit("dialog_start_game", {"is_go_from_save_game": is_go_from_save_game, "save_path": save_path})
         if not is_go_from_save_game:
             try:
                 self.main_menu_bgm.stop()
@@ -183,6 +190,7 @@ class Engine:
             self.save_game_system.load_game(save_path)
 
     def fullscreen(self):
+        self.event.emit("fullscreen", {"is_full_screen": self.is_full_screen})
         if pygame.display.is_fullscreen():
             self.unfullscreen()
             return
@@ -199,6 +207,7 @@ class Engine:
         #self.dialog_choice.set_panel_size(self.dpi.to_real(self.dialog_choice.get_panel_size()[0],self.dialog_choice.get_panel_pos()[1])[0],self.dialog_choice.get_panel_size()[1])
 
     def unfullscreen(self):
+        self.event.emit("fullscreen", {"is_full_screen": self.is_full_screen})
         #self.screen = pygame.display.set_mode(self.game_size,pygame.HWSURFACE | pygame.DOUBLEBUF | pygame.SCALED)
         pygame.display.toggle_fullscreen()
 

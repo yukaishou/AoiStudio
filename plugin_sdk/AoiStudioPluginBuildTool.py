@@ -9,13 +9,13 @@ import tempfile
 from pathlib import Path
 
 # 注意 pyc_compiler 为你原有模块
-import pyc_compiler
+from plugin_sdk import pyc_compiler
 from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
                                QPushButton, QLineEdit, QTextEdit, QFileDialog, QLabel,
                                QListWidget, QListWidgetItem, QStackedWidget, QFormLayout,
                                QGroupBox, QSpinBox, QCheckBox, QFrame, QScrollArea, QMessageBox)
 from PySide6.QtCore import Qt, QObject, Signal, QSize
-from PySide6.QtGui import QFont, QColor, QPalette
+from PySide6.QtGui import QFont, QColor, QPalette, QIcon
 
 
 # -------------------------- 跨线程信号桥 --------------------------
@@ -322,6 +322,7 @@ class AoiStudioPluginHub(QMainWindow):
     def __init__(self, console, history: HistoryManager):
         super().__init__()
         self.setWindowTitle("AoiStudio Plugin SDK GUI")
+        self.setWindowIcon(QIcon("icon.png"))  # 设置图标
         self.resize(960,640)
         self.console = console
         self.history = history

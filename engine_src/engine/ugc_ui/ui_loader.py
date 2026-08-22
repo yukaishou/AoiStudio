@@ -14,6 +14,7 @@ class UILoader:
         self.created_elements = {}  # 存储已创建的元素，方便后续引用
 
     def load_from_file(self, file_path):
+        self.engine.event.emit("ugc_ui_load",{"event":"ugc_ui_load","data":file_path})
         file_path = file_path
         """从JSON文件加载UI"""
         config = self.engine.resource_manager.load_json_file(file_path)

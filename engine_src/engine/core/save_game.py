@@ -9,6 +9,7 @@ class SaveGame:
         self.engine = engine
 
     def save_game(self, path):
+        self.engine.event.emit("save_game", {"save_path": path})
         dialogue_file_path = self.engine.dialog.dialogue_file_path
         if self.engine.dialog.current_dialogue_index == 1:
             dialogue_index = self.engine.dialog.current_dialogue_index-1
@@ -59,6 +60,7 @@ class SaveGame:
         log.log(0, f"[SAVE] 完成存档写入：{path}")
 
     def load_game(self, path):
+        self.engine.event.emit("load_game", {"load_path": path})
         if not os.path.exists(path):
             log.log(2, f"[SAVE] 存档不存在：{path}")
             return
@@ -91,14 +93,17 @@ class SaveGame:
         log.log(0, f"[SAVE] 成功读取存档：{path}")
 
     def init_solt(self):
+        self.engine.event.emit("init_solt")
         if not os.path.exists("saves"):
             os.mkdir("saves")
             log.log(0, "[SAVE] 创建存档目录 saves")
 
     def load_solt(self, solt_index):
+        self.engine.event.emit("load_solt", {"solt_index": solt_index})
         self.load_game(f"saves/save_solt{solt_index}.save")
 
     def save_solt(self, solt_index):
+        self.engine.event.emit("save_solt", {"solt_index": solt_index})
         self.init_solt()
         self.save_game(f"saves/save_solt{solt_index}.save")
 

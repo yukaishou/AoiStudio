@@ -3,14 +3,16 @@ from .ui_components import UIButton, UIImage, UIText
 from .ui_loader import UILoader
 
 class UIManager:
-    def __init__(self, screen_size):
+    def __init__(self, screen_size,engine=None):
         self.root = None
         self.screen_size = screen_size
         self.ui_loader = UILoader
+        self.engine = engine
 
 
 
     def set_root(self, root_element):
+        self.engine.event.emit("ui_root_set", {"root": root_element})
         self.root = root_element
         # 自动居中根节点（如果锚点是 center）
         if self.root and self.root.anchor == "center":

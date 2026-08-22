@@ -14,6 +14,7 @@ from PySide6.QtCore import (Qt, QMimeData, QPoint,
 from PySide6.QtGui import QIcon, QPixmap, QAction
 from PySide6.QtMultimedia import QMediaPlayer, QAudioOutput
 from common import AoiStudioCrasher
+from common import check_game_file_full
 import json
 from editor import editor_dialog
 from editor import editor_script
@@ -746,6 +747,14 @@ class MainEditorWindow(QMainWindow):
         else:
             pass
         if self.is_opening_project:
+            if not check_game_file_full.check_game_file_full(self.project_path) == check_game_file_full.NOT_MISS:
+                # 询问是否需要构建剧本索引
+                ret = QMessageBox.question(self, "构建剧本索引", "是否需要构建剧本索引？",
+                                          QMessageBox.Yes | QMessageBox.No)
+                if ret == QMessageBox.Yes:
+                    self.build_id_file()
+                else:
+                    return
             print("正在预览中...")
             # 异步预览
             self.debugger_path = open("caches/debugger_path.txt", encoding="utf-8").read()

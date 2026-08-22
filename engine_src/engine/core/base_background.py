@@ -30,12 +30,14 @@ class BaseBackground():
         self.image_obj.draw(screen)
 
     def fade_out(self,speed=0.005):
+        self.engine.event.emit("background_fade_out",{"background":self,"speed":speed})
         log.log(0,"fade out")
         self.is_fade_out = True
         self.speed = speed
         self.target_alpha = 0
 
     def set_background(self, image_path):
+        self.engine.event.emit("background_change",{"background":self,"image_path":image_path})
         self.image_path = image_path
         self.image = self.engine.resource_manager.load_image(image_path)
         self.image_obj.set_image(self.image,None,[0,0],[1,1],"fill")

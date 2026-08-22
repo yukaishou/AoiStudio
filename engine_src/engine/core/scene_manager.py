@@ -26,18 +26,21 @@ class Scene:
             character.draw(screen)
 
     def add_background(self, image_path):
+        self.engine.event.emit("scene_background_add", {"image_path": image_path})
         background = base_background.BaseBackground(image_path, self.engine)
 
         self.backgrounds.append(background)
         return background
 
     def add_character(self, image_path, position):
+        self.engine.event.emit("scene_character_add", {"image_path": image_path, "position": position})
         log.log(0, f"[SCENE] Adding character: {image_path}, {position}")
         character = base_character.BaseCharacter(image_path, position, self.engine)
         self.characters.append(character)
         return character
 
     def switch_background(self, background_path, way, speed):
+        self.engine.event.emit("scene_background_switch", {"background_path": background_path, "way": way, "speed": speed})
         #先创建一个当前也就是0号背景,然后让那个复制的淡出，然后把0号背景换成新的背景就照了
         if len(self.backgrounds) == 0:
             self.add_background(background_path)
@@ -47,6 +50,7 @@ class Scene:
         new_background.fade_out(speed)
 
     def switch_bgm(self, bgm_path, fade_speed):
+        self.engine.event.emit("scene_bgm_switch", {"bgm_path": bgm_path, "fade_speed": fade_speed})
         if len(self.bgm) > 0:
             self.bgm[0].fade_out(fade_speed)
             bgm = base_sound.BaseSound(bgm_path, self.engine)

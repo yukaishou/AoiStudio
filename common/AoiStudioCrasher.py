@@ -167,5 +167,6 @@ def main(msg=""):
     win = tk.Tk()
     app = UE4LikeErrorWindow(win,msg)
     win.mainloop()
+
 if __name__ == "__main__":
     main()

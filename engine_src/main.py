@@ -8,9 +8,13 @@ import pygame
 from engine_src.engine.core import engine
 from engine_src.engine import splash_screen
 from common import AoiStudioCrasher
+from common import check_game_file_full
+from tkinter import messagebox
 import json
 import traceback
 import platform
+
+
 
 if __name__ == "__main__":
     game = None
@@ -28,6 +32,8 @@ if __name__ == "__main__":
         ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(buf)
 
     pygame.init()
+    if not check_game_file_full.check_game_file_full(os.getcwd()) == check_game_file_full.NOT_MISS:
+        messagebox.showwarning("关键文件缺失")
     try:
         game_config = json.load(open("config/game.json", "r", encoding="utf-8"))
         game_window_size = (game_config["game_size"][0], game_config["game_size"][1])
@@ -41,8 +47,6 @@ if __name__ == "__main__":
             shutil.rmtree("plugins_runtime")
         game.debug_server.stop()
     except Exception as e:
-
-
         # 安全退出引擎，game可能未实例化
         if game is not None:
             try:

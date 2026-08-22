@@ -29,6 +29,7 @@ class CFGDecoder:
         self.is_processing = False  # 是否正在处理序列
 
     def register(self, name, func):
+        self.engine.event.emit("cfg_command_register", {"name": name, "func": func})
         """注册自定义指令"""
         self.commands[name.lower()] = func
 
@@ -78,6 +79,7 @@ class CFGDecoder:
     # 3. 执行入口：统一处理单行/多行，入队并启动执行
     # -------------------------------------------------------------------------
     def execute(self, line: str):
+        self.engine.event.emit("cfg_command_execute",{"line": line})
         """外部调用：执行单行或多行指令（用 \n 分隔）"""
         # 拆分并清理空行
         lines = [l.strip() for l in line.split("\n") if l.strip()]
@@ -297,9 +299,11 @@ class CFGDecoder:
             log.log(2, "[CFG] remove 缺少参数")
             return
         if args[0] == "character":
+            self.engine.event.emit("dialogue_character_remove", {"character_name": args[1]})
             log.log(0, f"[CFG] 移除角色 {args[1]}")
             self.engine.scene.characters.remove(self.engine.scene.characters[int(args[1])])
         if args[0] == "flag":
+            self.engine.event.emit("dialogue_flag_remove", {"flag_name": args[1]})
             log.log(0, f"[CFG] 移除标志 {args[1]}")
             self.engine.dialog.flags.remove(str(args[1]))
 
@@ -311,12 +315,15 @@ class CFGDecoder:
             log.log(0, f"[CFG] 跳转到剧本 {args[1]}")
             if args[1].startswith("id:"):
                 target_index = str(args[1][3:])
+                self.engine.event.emit("dialogue_jump", {"type":"jump_dialogue_file","jump_type":"id","dialogue_id": target_index})
                 self.engine.dialog.load_dialogue(self.engine.id_index_map[target_index])
                 self.engine.dialog.start_dialogue()
             if args[1].startswith("file:"):
+                self.engine.event.emit("dialogue_jump", {"type":"jump_dialogue_file","jump_type":"file","dialogue_path": args[1][5:]})
                 self.engine.dialog.load_dialogue(args[1][5:])
                 self.engine.dialog.start_dialogue()
         if args[0] == "dialogue_index":
+            self.engine.event.emit("dialogue_jump", {"type":"jump_dialogue_index","jump_type":"index","dialogue_index": int(args[1])})
             log.log(0, f"[CFG] 跳转到当前剧本对话 {args[1]}")
             self.engine.dialog.current_dialogue_index = int(args[1])
             self.engine.dialog.start_dialogue()
