@@ -17,25 +17,27 @@ class PluginManager:
         if not os.path.exists("plugins_runtime"):
             os.mkdir("plugins_runtime")
         if path.endswith(".aoi"):
-
-            with zipfile.ZipFile(path) as zf:
-                try:
-                    if not json.load(zf.open("info.json", "r"))["type"] == "plugin":
+            try:
+                with zipfile.ZipFile(path) as zf:
+                    info_raw = zf.read("info.json")
+                    info = json.loads(info_raw)
+                    if info.get("type") != "plugin":
+                        log.log(2, f"[PLUGIN] {path} 不是合法插件包")
                         return
-                    information = json.load(zf.open("plugin_info.json", "r"))
+
+                    plugin_info_raw = zf.read("plugin_info.json")
+                    information = json.loads(plugin_info_raw)
 
                     zf.extractall(f"plugins_runtime/{information['name']}")
+            except Exception as e:
+                log.log(2, f"[PLUGIN] 插件加载失败 {path}: {e}")
+                return
 
-                except Exception as e:
-                    log.log(2, f"[PLUGIN] 插件加载失败 {path}: {e}")
-                    return
-            # 这里调用引擎资源管理器封装好的加载模块方法
             plugin_main = self.engine.resource_manager.load_model(
                 f"plugins_runtime/{information['name']}/plugin",
                 f"plugin_{information['name']}"
-            ).Plugin(
-                self.plugin_api, self.engine, information["name"]
-            )
+            ).Plugin(self.plugin_api, self.engine, information["name"])
+
             self.plugins.append(PluginObject(plugin_main, information, self))
             log.log(0, f"[PLUGIN] 插件{information['name']}加载成功")
 
@@ -45,19 +47,19 @@ class PluginManager:
             plugin.start()
 
     def update(self):
-        # 这个得写try，谁也不想玩家玩着玩着崩了
-        name = ""
-        plugin = None
-        try:
-            for plugin in self.plugins:
-                name = plugin.plugin_info['name']
+        for plugin in self.plugins[:]:  # 切片拷贝，防止遍历过程列表修改出错
+            name = plugin.plugin_info['name']
+            try:
                 plugin.update()
-        except Exception as e:
-            log.log(2, f"[PLUGIN] 插件{name}更新时出错: {e}")
-            plugin.plugin.on_game_end()
-            self.plugins.remove(plugin)
-            log.log(0, f"[PLUGIN] 插件{name}已卸载")
-
+            except Exception as e:
+                log.log(2, f"[PLUGIN] 插件{name}更新时出错: {e}")
+                try:
+                    plugin.plugin.on_game_end()
+                except:
+                    pass
+                if plugin in self.plugins:
+                    self.plugins.remove(plugin)
+                log.log(0, f"[PLUGIN] 插件{name}已卸载")
     def end(self):
         # 专门不写try的，因为插件end罢工应该让引擎也跟着一起罢工，所以这个失败了直接走fatal报错
         for plugin in self.plugins:
@@ -72,16 +74,17 @@ class PluginObject:
         self.plugin.on_game_load()
 
     def start(self):
-        for i in self.plugin_manager.plugins:
-            self.rely_ons = self.plugin_info["rely_ons"]
-            if i in self.plugin_manager.plugins:
-                if i.plugin_info["name"] in self.rely_ons:
-                    self.rely_ons.remove(i.plugin_info["name"])
-        if len(self.rely_ons) == 0:
+        # 复制依赖列表，不修改原始plugin_info
+        need_deps = self.plugin_info.get("rely_ons", []).copy()
+        installed_names = [p.plugin_info["name"] for p in self.plugin_manager.plugins]
+
+        missing = [dep for dep in need_deps if dep not in installed_names]
+        if len(missing) == 0:
             self.plugin.on_game_start()
         else:
-            self.plugin_manager.plugins.remove(self)
-            log.log(2, f"[PLUGIN] 插件{self.plugin_info['name']}的依赖插件：{self.rely_ons}未安装，因此无法启动并卸载")
+            # 标记为不可启动，不要在这里直接remove，交给上层处理
+            log.log(2, f"[PLUGIN] 插件{self.plugin_info['name']}缺失依赖：{missing}，跳过启动")
+            raise RuntimeError(f"Missing plugin dependency: {missing}")
 
     def update(self):
         self.plugin.on_game_update()

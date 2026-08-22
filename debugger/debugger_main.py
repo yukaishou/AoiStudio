@@ -16,6 +16,7 @@ class TcpClientWorker(QObject):
     sig_log = Signal(str)
     sig_conn_lost = Signal()
     sig_conn_ok = Signal()
+    sig_quit_app = Signal()   # 新增：通知主线程退出程序
 
     def __init__(self, host="127.0.0.1", port=8877):
         super().__init__()
@@ -48,6 +49,7 @@ class TcpClientWorker(QObject):
         except Exception as e:
             self.sig_log.emit(f"[GUI] 连接失败: {e}")
             self.sig_conn_lost.emit()
+            self.sig_quit_app.emit()   # 连接失败 → 请求退出
             return
 
         while self._alive and self.sock is not None:
@@ -97,6 +99,7 @@ class TcpClientWorker(QObject):
                 pass
             self.sock = None
         self.sig_conn_lost.emit()
+        self.sig_quit_app.emit()   # 连接断开 → 请求退出
 
     def send_command(self, cmd_obj: dict):
         if not self.is_connected:
@@ -111,6 +114,8 @@ class TcpClientWorker(QObject):
 
     def close_socket(self):
         self._mark_disconnect()
+        if self._io_thread is not None and self._io_thread.is_alive():
+            self._io_thread.join(timeout=1.0)
 
 
 class DebuggerGuiWindow(QMainWindow):
@@ -129,11 +134,15 @@ class DebuggerGuiWindow(QMainWindow):
         self.tcp_client = TcpClientWorker(host="127.0.0.1", port=8877)
         self.tcp_client.moveToThread(self.tcp_thread)
         self.tcp_thread.started.connect(self.tcp_client.connect_server)
+
         self.tcp_client.sig_log.connect(self._append_log)
         self.tcp_client.sig_recv_response.connect(self._on_response)
         self.tcp_client.sig_conn_lost.connect(self._on_conn_lost)
         self.tcp_client.sig_conn_ok.connect(self._on_conn_ok)
         self.tcp_client.sig_conn_ok.connect(self.tcp_client.ping_timer.start)
+        # 绑定退出信号，主线程执行close
+        self.tcp_client.sig_quit_app.connect(self.close)
+
         self.tcp_thread.start()
 
         central = QWidget()
@@ -180,7 +189,6 @@ class DebuggerGuiWindow(QMainWindow):
         main_layout.setStretch(2, 2)
 
     def _create_tab_scene_readonly(self):
-        """场景信息：纯只读展示，无任何编辑控件"""
         w = QWidget()
         lay = QFormLayout(w)
         self.tab_widget.addTab(w, "场景信息")
@@ -273,7 +281,6 @@ class DebuggerGuiWindow(QMainWindow):
     def _on_conn_lost(self):
         self.conn_status_label.setText("🔴 断开服务器")
         self._append_log("[GUI] 与调试服务断开连接")
-        sys.exit()
 
     def _append_log(self, text: str):
         self.log_text.append(text)

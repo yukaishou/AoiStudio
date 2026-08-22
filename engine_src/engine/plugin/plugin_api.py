@@ -29,23 +29,20 @@ class PluginAPI:
         """
         print(f"[PluginAPI] Call {plugin_name} function {function_name}")
         try:
-            # 查找插件
             for wrapper in self.engine.plugin_manager.plugins:
-                if wrapper.plugin.name == plugin_name:
+                if wrapper.plugin_info["name"] == plugin_name:
                     plugin = wrapper.plugin
-
-                    # 检查函数是否存在
                     if not hasattr(plugin, function_name):
                         print(f"[PluginAPI] 插件 '{plugin_name}' 没有函数 '{function_name}'")
                         return None
-
-                    # 获取函数并调用
                     func = getattr(plugin, function_name)
-                    return func(*args, **kwargs)
-
+                    try:
+                        return func(*args, **kwargs)
+                    except Exception as e:
+                        print(f"[PluginAPI] 被调用插件内部异常 {plugin_name}.{function_name}: {e}")
+                        return None
             print(f"[PluginAPI] 未找到插件 '{plugin_name}'")
             return None
-
         except Exception as e:
             print(f"[PluginAPI] 调用错误: {plugin_name}.{function_name} - {e}")
             return None

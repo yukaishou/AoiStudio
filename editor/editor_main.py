@@ -749,21 +749,21 @@ class MainEditorWindow(QMainWindow):
             print("正在预览中...")
             # 异步预览
             self.debugger_path = open("caches/debugger_path.txt", encoding="utf-8").read()
+
+            threading.Thread(target=lambda: self.preview_game_thread()).start()
             threading.Thread(target=lambda: self.preview_game_debugger()).start()
-            threading.Thread(target=lambda :self.preview_game_thread()).start()
         else:
             QMessageBox.warning(self, "错误", "请先打开项目")
 
     def preview_game_thread(self):
         o_path = os.getcwd()
         player_path = open("caches/debug_player_path.txt",encoding="utf-8").read()
-
         os.chdir(self.project_path)
         os.system(player_path)
         os.chdir(o_path)
 
     def preview_game_debugger(self):
-        time.sleep(1.5)
+        time.sleep(5)
         if os.path.exists(self.debugger_path):
             os.system(self.debugger_path)
 
