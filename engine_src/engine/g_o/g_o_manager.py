@@ -21,8 +21,10 @@ class GOManager:
     def create_component(self, go, comp_name: str, props: dict):
         cls = self.get_component_by_name(comp_name)
         if cls is None:
-            log.warning(f"组件不存在:{comp_name}")
-            return None
+            cls = self.engine.resource_manager.load_python_script(comp_name).ScriptBase
+            if cls is None:
+                log.log(2,f"组件不存在:{comp_name}")
+                return None
         inst = cls(go, props, self.engine)
         go.add_component(inst)
         return inst

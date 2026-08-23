@@ -9,13 +9,13 @@ import tempfile
 from pathlib import Path
 
 # 注意 pyc_compiler 为你原有模块
-from plugin_sdk import pyc_compiler
+from common import pyc_compiler
 from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
                                QPushButton, QLineEdit, QTextEdit, QFileDialog, QLabel,
                                QListWidget, QListWidgetItem, QStackedWidget, QFormLayout,
-                               QGroupBox, QSpinBox, QCheckBox, QFrame, QScrollArea, QMessageBox)
+                               QGroupBox, QFrame, QScrollArea, QMessageBox)
 from PySide6.QtCore import Qt, QObject, Signal, QSize
-from PySide6.QtGui import QFont, QColor, QPalette, QIcon
+from PySide6.QtGui import QColor, QPalette, QIcon
 
 
 # -------------------------- 跨线程信号桥 --------------------------

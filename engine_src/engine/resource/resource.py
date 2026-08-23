@@ -5,6 +5,7 @@ import json
 import zipfile
 from io import BytesIO
 from pathlib import Path
+import tempfile
 from engine_src.engine.resource import assets_bundle
 from engine_src.engine.core import log
 
@@ -92,6 +93,75 @@ class AssetManager:
         except Exception as e:
             log.log(2, f"[RES] Failed to load model {abs_path}: {e}")
             return None
+
+    # ====================== 新增：从pak压缩包加载py/pyc模块 ======================
+    def load_model_from_package(self, rel_path: str, module_name: str):
+        """
+        从pak zip资源包内加载 .py / .pyc 模块
+        内部会生成临时磁盘文件用于Python import，加载后自动删除临时文件
+        :param rel_path: 包内相对路径(不带res/，例如 scripts/my_logic.py)
+        :param module_name: 动态模块名
+        :return: module对象 / None失败
+        """
+        norm_path = self._normalize_asset_path(rel_path)
+        cache_key = f"pak:{norm_path}_{module_name}"
+
+        # 缓存命中直接返回
+        if cache_key in self._model_cache:
+            self.cache_stats["hits"] += 1
+            log.log(3, f"[RES] pak model cache hit: {cache_key}")
+            return self._model_cache[cache_key]
+        self.cache_stats["misses"] += 1
+
+        if self.pak_finder is None:
+            log.log(2, f"[RES] pak_finder not initialized, cannot load pak model {norm_path}")
+            return None
+
+        try:
+            package_info = self.pak_finder.find_file_by_relative_path(norm_path)
+            if not package_info or not package_info[0].get("package"):
+                log.log(2, f"[RES] pak model file not found: {norm_path}")
+                return None
+            pak_filename = package_info[0]["package"]
+            pak_fullpath = os.path.join("paks", pak_filename)
+
+            with zipfile.ZipFile(pak_fullpath, "r") as zf:
+                raw_bytes = zf.read(norm_path)
+
+            suffix = Path(norm_path).suffix
+            # 创建临时py/pyc文件，delete=False，加载完手动删除
+            with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp_f:
+                tmp_f.write(raw_bytes)
+                tmp_file_path = tmp_f.name
+
+            log.log(0, f"[RES] Loading pak model {norm_path} -> temp:{tmp_file_path}")
+            spec = importlib.util.spec_from_file_location(module_name, tmp_file_path)
+            if spec is None:
+                os.unlink(tmp_file_path)
+                log.log(2, f"[RES] cannot create spec for pak model {norm_path}")
+                return None
+
+            module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(module)
+
+            # 删除临时文件
+            os.unlink(tmp_file_path)
+
+            self._model_cache[cache_key] = module
+            return module
+
+        except KeyError:
+            log.log(2, f"[RES] pak zip entry missing: {norm_path}")
+        except Exception as e:
+            log.log(2, f"[RES] load pak model {norm_path} error: {e}")
+        return None
+
+    def load_python_script(self,path):
+        if os.path.exists("res/"+path):
+            return self.load_model(os.path.abspath("res/"+path),os.path.basename(path))
+        else:
+            return self.load_model_from_package(path,os.path.basename(path))
+    # ==========================================================================
 
     def _find_existing_path(self, *paths):
         """查找存在的路径"""
@@ -192,7 +262,6 @@ class AssetManager:
                 with zipfile.ZipFile(pak_path, 'r') as zip_io:
                     raw_bytes = zip_io.read(path)
                 # pygame.music不支持BytesIO，只能临时文件
-                import tempfile
                 with tempfile.NamedTemporaryFile(delete=False, suffix=Path(path).suffix) as tf:
                     tf.write(raw_bytes)
                     tmp_music_path = tf.name
@@ -203,8 +272,6 @@ class AssetManager:
             except Exception as e:
                 log.log(2, f"[RES] Failed to load music from pak {path}: {e}")
                 return False
-
-        log.log(2, f"[RES] No source directory or pak finder available for music {path}")
         return False
 
     def _load_text_from_package(self, path: str, encoding: str = "utf-8") -> str | None:
@@ -238,10 +305,10 @@ class AssetManager:
             path: 资源相对路径
             loader_func: 传入磁盘路径加载函数
             bytes_loader: 传入bytes(BytesIO)内存加载函数
-            asset_type: 资源类型 ("image" 或 "sound")
+            asset_type: 资源类型 ("image" / "sound")
 
         Returns:
-            加载的资源对象或None
+            加载完成的资源对象或None
         """
         _, resource_path = self._get_asset_base_paths()
         source_path = os.path.join(resource_path, path)
@@ -251,29 +318,28 @@ class AssetManager:
             try:
                 return loader_func(source_path)
             except pygame.error as e:
-                log.log(2, f"[RES] Failed to load {asset_type} from source {source_path}: {e}")
+                log.log(2, f"[RES] load {asset_type} source error {source_path}: {e}")
                 return None
-        # 否则从包中加载
-        elif self.pak_finder is not None:
+        # 否则尝试pak包
+        if self.pak_finder is None:
+            log.log(2, f"[RES] {asset_type} {path} source missing and no pak_finder")
+            return None
+        try:
             pack_result = self._load_asset_from_package_memory(path, bytes_loader, asset_type)
-            if pack_result and pack_result[0]:
-                result, package_name = pack_result
-                log.log(0, f"[RES] Load {asset_type} {path} from package {package_name}")
-                return result
-        else:
-            log.log(2, f"[RES] No source directory or pak finder available for {asset_type} {path}")
-
+            return pack_result
+        except Exception as e:
+            log.log(2, f"[RES] load {asset_type} from pak error {path}: {e}")
         return None
 
     def _load_asset_from_package_memory(self, path, bytes_loader, asset_type):
         """
-        从pak包内存加载，**不再生成磁盘临时文件**
-        Returns: (资源对象, 包名) 或 None
+        从pak包内存加载，**不生成磁盘临时文件**
+        Returns: 资源对象 / None
         """
         try:
             package_info = self.pak_finder.find_file_by_relative_path(path)
             if not package_info or not package_info[0].get("package"):
-                log.log(2, f"[RES] {asset_type.capitalize()} file {path} not found in any package")
+                log.log(2, f"[RES] {asset_type} file {path} not found in any package")
                 return None
 
             pak_file_name = package_info[0]["package"]
@@ -283,31 +349,23 @@ class AssetManager:
                 raw_data = zip_io.read(path)
 
             asset = bytes_loader(raw_data)
-            return asset, pak_file_name
-
+            log.log(0, f"[RES] Load {asset_type} {path} from package {pak_file_name}")
+            return asset
         except KeyError:
-            log.log(2, f"[RES] {asset_type.capitalize()} file {path} not found in package")
+            log.log(2, f"[RES] {asset_type} entry {path} missing in zip")
         except pygame.error as e:
-            log.log(2, f"[RES] Failed to load {asset_type} after unpack {path}: {e}")
-        except Exception as e:
-            log.log(2, f"[RES] Unexpected error loading {asset_type} {path}: {e}")
+            log.log(2, f"[RES] {asset_type} decode error {path}: {e}")
         return None
 
     def get_cache_stats(self):
         """获取缓存统计信息"""
-        total_requests = self.cache_stats['hits'] + self.cache_stats['misses']
-        hit_rate = (self.cache_stats['hits'] / total_requests * 100) if total_requests > 0 else 0
-
+        total = self.cache_stats['hits'] + self.cache_stats['misses']
+        hit_rate = (self.cache_stats['hits'] / total * 100) if total > 0 else 0.0
         return {
-            'hits': self.cache_stats['hits'],
-            'misses': self.cache_stats['misses'],
-            'hit_rate': round(hit_rate, 2),
-            'cached_images': len(self._image_cache),
-            'cached_sounds': len(self._sound_cache),
-            'cached_models': len(self._model_cache),
-            'cached_text': len(self._text_cache),
-            'cached_json': len(self._json_cache)
+            **self.cache_stats,
+            'hit_rate_pct': round(hit_rate, 2)
         }
+
 
     def clear_cache(self):
         """清空所有缓存"""
@@ -318,10 +376,6 @@ class AssetManager:
         self._text_cache.clear()
         self._json_cache.clear()
         self.cache_stats = {'hits': 0, 'misses': 0}
-
-    def __del__(self):
-        """析构函数，清理资源"""
-        self.clear_cache()
 
     def load_file_buffer(self, path: str):
         """
