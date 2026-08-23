@@ -1,9 +1,10 @@
 from engine_src.engine.core import log
 from engine_src.engine.g_o.game_object_base import GameObjectBase
-from engine_src.engine.g_o.components import sprite_renderer
+from engine_src.engine.g_o.components import sprite_renderer, audio_player
 
 COMPONENTS_MAP = {
     "SpriteRenderer": sprite_renderer.SpriteRenderer,
+    "AudioPlayer":audio_player.AudioPlayer,
 }
 
 class GOManager:

@@ -8,7 +8,7 @@ class AudioPlayer(ComponentBase):
         self.sound_path = properties.get("sound_path", "")
         self.volume = float(properties.get("volume", 0.5))
         self.loops = int(properties.get("loops", 0))
-        self.auto_play = bool(properties.get("auto_play", False))
+        self.auto_play = bool(properties.get("auto_play", True))
 
         self.base_sound: BaseSound | None = None
 
