@@ -1,65 +1,83 @@
 AoiStudio/
-├─ all_code_row.py                 # 代码行数统计脚本
-├─ make_abt.py                     # ABT编译
-├─ make_debugger.py                # 调试器编译
-├─ make_editor.py                  # 编辑器编译
-├─ make_engine.py                  # 播放器编译
-├─ common/                         # 全局公共库
-│  ├─ AoiStudioCrasher.py          # 崩溃捕获、崩溃报告
+├─ all_code_row.py                 # 项目代码行数统计脚本
+├─ dir_str_view.py                 # 目录树打印工具
+├─ make_abt.py                     # ABT资源包编译入口
+├─ make_debugger.py                # 调试器编译打包入口
+├─ make_editor.py                  # PySide6编辑器编译打包入口
+├─ make_engine.py                  # AVG游戏播放器编译打包入口
+├─ make_plugin_sdk.py              # 插件SDK构建脚本
+├─ common/                         # 全局公共工具库
+│  ├─ AoiStudioCrasher.py          # 全局崩溃捕获、崩溃报告生成
+│  ├─ check_game_file_full.py      # 游戏项目完整性校验
 │  └─ __init__.py
-├─ debugger/                       # 调试器客户端
-│  └─ debugger_main.py
-├─ editor/                         # PyQt5编辑器
-│  ├─ editor_main.py               # 编辑器主入口
-│  ├─ editor_dialog.py             # 对话编辑面板
-│  ├─ editor_project_settings.py   # 项目设置面板
-│  ├─ editor_script.py             # CFG脚本编辑器
-│  ├─ tool_id_builder.py           # ID生成工具
-│  ├─ package/                     # 打包工具子模块
-│  │  ├─ AoiStudioBuildTool.py               # 总构建工具
-│  │  ├─ assets_bundle_package_build.py      # 资源包构建
+├─ debugger/                       # 远程调试器 客户端
+│  └─ debugger_main.py             # 调试器主程序入口
+├─ editor/                         # PySide6可视化编辑器源码
+│  ├─ editor_main.py               # 编辑器主入口【859行，编辑器核心】
+│  ├─ editor_character.py          # 角色立绘编辑面板
+│  ├─ editor_dialog.py             # 对话编辑面板【371行】
+│  ├─ editor_doc_view.py            # 文档预览视图
+│  ├─ editor_main_menu_settings.py # 编辑器主菜单设置
+│  ├─ editor_project_settings.py   # 项目配置面板
+│  ├─ editor_script.py             # CFG演出脚本编辑器
+│  ├─ tool_id_builder.py            # ID自动生成工具
+│  ├─ package/                     # 编辑器内置打包子模块
+│  │  ├─ AoiStudioBuildTool.py               # 统一总构建工具
+│  │  ├─ assets_bundle_package_build.py      # ABT资源包构建逻辑
 │  │  └─ os_tools/
-│  │     ├─ tool_chage_exe_icon.py   # 修改exe图标
-│  │     └─ tool_image_to_ico.py     # 图片转ico
+│  │     ├─ tool_chage_exe_icon.py   # 修改exe程序图标
+│  │     └─ tool_image_to_ico.py     # 图片转ico图标工具
 │  └─ __init__.py
-├─ engine_src/                     # 游戏引擎源代码
-│  ├─ main.py                      # 引擎启动入口
-│  ├─ test_resource_load_json_path_ok.py
+├─ engine_src/                     # Pygame游戏运行引擎源码
+│  ├─ main.py                      # 游戏引擎启动入口
+│  ├─ test_resource_load_json_path_ok.py # 资源路径测试脚本
 │  ├─ engine/
-│  │  ├─ splash_screen.py          # 启动闪屏
-│  │  ├─ core/                     # 引擎核心
-│  │  │  ├─ base_background.py      # 背景渲染
-│  │  │  ├─ base_character.py      # 角色立绘
-│  │  │  ├─ base_sound.py          # 音频封装
-│  │  │  ├─ cfg_decoder.py         # CFG脚本解析器【核心】
-│  │  │  ├─ dialogue.py            # 对话系统
-│  │  │  ├─ engine.py              # 引擎主循环
-│  │  │  ├─ image.py               # 图片资源封装
-│  │  │  ├─ log.py                 # 日志
-│  │  │  ├─ save_game.py           # 存档读档
-│  │  │  └─ scene_manager.py       # 场景管理器
+│  │  ├─ splash_screen.py          # 程序启动闪屏
+│  │  ├─ core/                     # 引擎核心模块
+│  │  │  ├─ base_background.py      # 背景渲染封装
+│  │  │  ├─ base_character.py       # 角色立绘管理【282行】
+│  │  │  ├─ base_sound.py           # 音频播放封装
+│  │  │  ├─ cfg_decoder.py          # CFG演出脚本解析器【核心298行】
+│  │  │  ├─ dialogue.py             # AVG对话逻辑【230行】
+│  │  │  ├─ engine.py               # 引擎主循环【236行】
+│  │  │  ├─ event/
+│  │  │  │  └─ event_bus.py         # 事件总线
+│  │  │  ├─ image.py                # 图片资源加载管理
+│  │  │  ├─ log.py                  # 日志输出
+│  │  │  ├─ save_game.py            # 存档/读档系统
+│  │  │  ├─ scene_manager.py        # 场景切换管理器
+│  │  │  └─ __init__.py
 │  │  ├─ debug/
-│  │  │  └─ debugger_tcp_serevr.py # TCP远程调试服务端
-│  │  ├─ plugin/
-│  │  │  ├─ plugin_api.py          # 插件对外API
-│  │  │  └─ plugin_manager.py      # 插件加载管理器
-│  │  ├─ resource/
-│  │  │  ├─ assets_bundle.py       # 自定义资源包格式读写
-│  │  │  └─ resource.py            # 资源管理器
-│  │  ├─ ugc_ui/                   # 用户自定义UI系统
-│  │  │  ├─ ui_components.py
-│  │  │  ├─ ui_element.py
-│  │  │  ├─ ui_loader.py
-│  │  └─ ui/                       # 引擎内置UI（对话框、选项）
-│  │     ├─ dialog_backtext.py
-│  │     ├─ dialog_choice.py
-│  │     └─ dialog_table.py
-│  │  └─ utils/
-│  │     ├─ dpi_tool.py            # DPI适配
-│  │     └─ smooth_tween.py        # 缓动动画
-│  └─ tools/
-│     ├─ assets_bundle_package_build.py
-│     └─ assets_bundle_package_finder.py
-└─ plugin_sdk/                     # 插件开发SDK
-   ├─ AoiStudioPluginBuildTool.py  # 插件打包工具
-   └─pyc_compiler.py              # pyc编译工具
+│  │  │  └─ debugger_tcp_serevr.py  # TCP远程调试服务端【281行】
+│  │  ├─ plugin/                    # 引擎插件运行时
+│  │  │  ├─ plugin_api.py           # 给插件调用对外API
+│  │  │  ├─ plugin_manager.py       # 插件加载、生命周期管理
+│  │  │  └─ __init__.py
+│  │  ├─ resource/                  # 资源管理层
+│  │  │  ├─ assets_bundle.py        # ABT自定义资源包读写【438行】
+│  │  │  ├─ resource.py             # 全局资源管理器【383行】
+│  │  │  └─ __init__.py
+│  │  ├─ ugc_ui/                    # 用户自定义UGC UI系统
+│  │  │  ├─ ui_components.py        # UI基础组件
+│  │  │  ├─ ui_element.py           # UI元素基类
+│  │  │  ├─ ui_loader.py            # UI配置加载器
+│  │  │  ├─ ui_manager.py           # UI总管理器
+│  │  │  └─ __init__.py
+│  │  ├─ ui/                        # 引擎内置AVG UI（对话框、选项）
+│  │  │  ├─ dialog_backtext.py      # 历史回看文本
+│  │  │  ├─ dialog_choice.py        # 分支选项框【192行】
+│  │  │  ├─ dialog_table.py         # 主对话文本框【260行】
+│  │  │  └─ __init__.py
+│  │  ├─ utils/                     # 通用工具函数
+│  │  │  ├─ dpi_tool.py             # Windows高DPI适配
+│  │  │  ├─ smooth_tween.py         # 动画缓动插值
+│  │  │  └─ __init__.py
+│  │  └─ tools/
+│  │     ├─ assets_bundle_package_build.py   # 资源包构建工具
+│  │     └─ assets_bundle_package_finder.py # 资源搜索定位【438行】
+│  └─ __init__.py
+└─ plugin_sdk/                     # 插件开发SDK，给第三方写插件用
+   ├─ AoiStudioPluginBuildTool.py  # 插件打包工具【581行】
+   ├─ dir_str_view.py
+   ├─ pyc_compiler.py              # Python脚本编译pyc工具
+   └─ __init__.py

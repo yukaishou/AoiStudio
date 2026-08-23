@@ -21,7 +21,7 @@ from engine_src.engine.plugin import plugin_manager
 from engine_src.engine.core import log
 from engine_src.engine.debug import debugger_tcp_serevr
 from engine_src.engine.core.event import event_bus
-
+from engine_src.engine.g_o import g_o_manager
 
 class Engine:
     def __init__(self, game_title, game_size):
@@ -59,6 +59,7 @@ class Engine:
         self.cfg_decoder = cfg_decoder.CFGDecoder(self)
         self.debug_server = debugger_tcp_serevr.DebugServerMain(self)
         self.event = event_bus.EventBus()
+        self.g_o_manager = g_o_manager.GOManager(self)
 
         # 初始化 UI
         self.ugc_ui_manager = ui_manager.UIManager(self.game_size,self)
@@ -87,6 +88,7 @@ class Engine:
         self.plugin_manager = plugin_manager.PluginManager(self)
 
     def run(self):
+        #self.test_g_o()
         # self.fullscreen()
         self.fps_font = pygame.font.Font("fonts/default.ttf", 24)
         if not self.in_dialog_game:
@@ -146,13 +148,15 @@ class Engine:
             delta_time = self.clock.tick(self.fps) / 1000.0
             self.screen.fill((0, 0, 0))
             self.scene.update()
+            self.g_o_manager.update(delta_time)
             if not self.in_dialog_game:
                 try:
                     self.main_menu_background.draw(self.screen)
                 except:
                     pass
             self.scene.draw(self.screen)
-            self.cfg_decoder.update_wait()
+            self.g_o_manager.render(self.screen)
+            self.cfg_decoder.update_wait(pygame.time.get_ticks())
             if not self.is_looking_backtext:
                 self.dialog_table.update(delta_time)
                 self.dialog_choice.update()
@@ -266,3 +270,24 @@ class Engine:
 
     def on_slot_click_5(self):
         self.save_game_ui_selected_solt = 5
+
+    # 测试方法
+    def test_g_o(self):
+        # 测试GameObject/Component系统
+        # 创建一个GameObject，并添加一个SpriteRenderer组件
+        if self.g_o_manager is None:
+            return
+        obj = self.g_o_manager.create_game_object(
+            "test_go",
+            {"position": [-300,-100], "scale": [1, 1], "rotation": 0},
+            None
+        )
+        self.g_o_manager.create_component(
+            obj,
+            "SpriteRenderer",
+            {"image_path": "characters/chr_2.png", "alpha": 255}
+        )
+        self.event.subscribe("dialog_start_game",self.delete_test_go)
+
+    def delete_test_go(self,data=None):
+        self.g_o_manager.remove_game_object("test_go")

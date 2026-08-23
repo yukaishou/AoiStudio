@@ -26,6 +26,7 @@ from editor import tool_id_builder
 from editor import editor_character
 from editor import editor_main_menu_settings
 from editor import editor_doc_view
+from editor import editor_python_edit
 import zipfile
 
 
@@ -402,9 +403,13 @@ class FileManagerPage(QWidget):
         act_new_dialog.triggered.connect(lambda _, d=current_dir: self.create_dialog_file(d))
         menu.addAction(act_new_dialog)
 
-        act_new_script = QAction("新建脚本(.cfg)", self)
+        act_new_script = QAction("新建脚本", self)
         act_new_script.triggered.connect(lambda _, d=current_dir: self.create_cfg_file(d))
         menu.addAction(act_new_script)
+
+        act_new_python_script = QAction("新建Python脚本", self)
+        act_new_python_script.triggered.connect(lambda _, d=current_dir: self.create_new_python_script(d))
+        menu.addAction(act_new_python_script)
 
         if index.isValid():
             sel_path = self.fs_model.filePath(index)
@@ -437,6 +442,10 @@ class FileManagerPage(QWidget):
                             menu.addAction(act_edit_dialog)
                     except Exception:
                         pass
+                if sel_path.endswith(".py"):
+                    act_edit_script = QAction("Python编辑", self)
+                    act_edit_script.triggered.connect(lambda _, p=sel_path: self.main_win.python_editor_tab(p, self.main_win))
+                    menu.addAction(act_edit_script)
 
         if self.clip_path:
             act_paste = QAction("粘贴", self)
@@ -569,6 +578,15 @@ class FileManagerPage(QWidget):
                 QMessageBox.warning(self, "错误", "文件已存在")
                 return
             open(script_path, "w", encoding="utf-8").close()
+
+    def create_new_python_script(self,path):
+        script_name, ok = QInputDialog.getText(self, "新建Python脚本", "脚本文件名（不需要后缀）：")
+        if ok and script_name.strip():
+            script_path = os.path.join(path, f"{script_name.strip()}.py")
+            if os.path.exists(script_path):
+                QMessageBox.warning(self, "错误", "文件已存在")
+                return
+            shutil.copyfile("res/python_script_template.txt", script_path)
 
 
 class MainEditorWindow(QMainWindow):
@@ -802,6 +820,20 @@ class MainEditorWindow(QMainWindow):
         try:
             editor = editor_dialog.DialogJsonEditor(file_path=file_path, main_win=main_win)
             tab_name = f"剧本编辑 - {os.path.basename(file_path)}"
+            self.tab_widget.addTab(editor, tab_name)
+            self.tab_widget.setCurrentWidget(editor)
+        except Exception as e:
+            traceback.print_exc()
+            QMessageBox.warning(self, "错误", f"打开剧本编辑器失败：{str(e)}")
+
+    def python_editor_tab(self, file_path, main_win):
+        if not isinstance(file_path, str) or not file_path:
+            print(f"[dialogue_editor_tab] 非法路径: {repr(file_path)}")
+            return
+
+        try:
+            editor = editor_python_edit.PyScriptEditor(file_path=file_path)
+            tab_name = f"Python 代码编辑 - {os.path.basename(file_path)}"
             self.tab_widget.addTab(editor, tab_name)
             self.tab_widget.setCurrentWidget(editor)
         except Exception as e:

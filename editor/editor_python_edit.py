@@ -2,54 +2,51 @@ import re
 import os
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QTextEdit, QPushButton,
                                QCompleter, QFileDialog, QMessageBox)
-from PySide6.QtCore import Qt, QStringListModel, QKeyCombination
-from PySide6.QtGui import (QSyntaxHighlighter, QTextCharFormat, QColor, QKeySequence,
-                           QTextCursor)
+from PySide6.QtCore import Qt, QStringListModel
+from PySide6.QtGui import (QSyntaxHighlighter, QTextCharFormat, QColor, QTextCursor)
 
 
-# ====================== 语法高亮 ======================
-class CFGHighlighter(QSyntaxHighlighter):
+# ====================== Python语法高亮（配色对齐你的CFG高亮） ======================
+class PythonHighlighter(QSyntaxHighlighter):
     def __init__(self, parent):
         super().__init__(parent)
         self.rules = []
 
-        # 1.注释 优先级最高
+        # 注释
         comment_format = QTextCharFormat()
         comment_format.setForeground(QColor("#6A9955"))
-        self.rules.append((re.compile(r"//.*$"), comment_format))
+        self.rules.append((re.compile(r"#.*$"), comment_format))
 
-        # 主命令关键字
-        cmd_format = QTextCharFormat()
-        cmd_format.setForeground(QColor("#569cd6"))
-        cmd_words = r"\b(add|move|switch|animation|remove|affection|wait|jump|quit|run)\b"
-        self.rules.append((re.compile(cmd_words), cmd_format))
+        # Python关键字
+        keyword_format = QTextCharFormat()
+        keyword_format.setForeground(QColor("#569cd6"))
+        keywords = r"\b(and|as|assert|async|await|break|class|continue|def|del|elif|else|except|finally|for|from|global|if|import|in|is|lambda|nonlocal|not|or|pass|raise|return|try|while|with|yield|True|False|None)\b"
+        self.rules.append((re.compile(keywords), keyword_format))
 
-        # 文件路径 file:xxx
-        path_format = QTextCharFormat()
-        path_format.setForeground(QColor("#4EC9B0"))
-        self.rules.append((re.compile(r"file:\S+"), path_format))
+        # 字符串 双引号
+        str_double_format = QTextCharFormat()
+        str_double_format.setForeground(QColor("#CE9178"))
+        self.rules.append((re.compile(r'"[^"\\]*(\\.[^"\\]*)*"'), str_double_format))
+        # 单引号
+        str_single_format = QTextCharFormat()
+        str_single_format.setForeground(QColor("#CE9178"))
+        self.rules.append((re.compile(r"'[^'\\]*(\\.[^'\\]*)*'"), str_single_format))
 
-        # flag标识
-        flag_format = QTextCharFormat()
-        flag_format.setForeground(QColor("#C586C0"))
-        self.rules.append((re.compile(r"\bflag:\w+\b"), flag_format))
-
-        # 数字（整数浮点数）
+        # 数字
         num_format = QTextCharFormat()
         num_format.setForeground(QColor("#B5CEA8"))
-        self.rules.append((re.compile(r"\d+\.?\d*|\.\d+"), num_format))
+        self.rules.append((re.compile(r"\b\d+\.?\d*|\.\d+\b"), num_format))
 
-        # 大括号 {}
-        brace_format = QTextCharFormat()
-        brace_format.setForeground(QColor("#DCDCAA"))
-        self.rules.append((re.compile(r"[{}]"), brace_format))
+        # 内置函数简单标记
+        builtin_fmt = QTextCharFormat()
+        builtin_fmt.setForeground(QColor("#4EC9B0"))
+        builtins = r"\b(print|len|range|input|int|str|float|list|dict|set|tuple|open|abs|max|min|sum)\b"
+        self.rules.append((re.compile(builtins), builtin_fmt))
 
-        #字符串
-        str_format = QTextCharFormat()
-        str_format.setForeground(QColor("#B5CEA8"))
-        self.rules.append((re.compile(r'".*?"'), str_format))
-
-
+        # 装饰器 @xxx
+        decor_fmt = QTextCharFormat()
+        decor_fmt.setForeground(QColor("#C586C0"))
+        self.rules.append((re.compile(r"@\w+"), decor_fmt))
 
     def highlightBlock(self, text):
         for pattern, fmt in self.rules:
@@ -57,21 +54,20 @@ class CFGHighlighter(QSyntaxHighlighter):
                 self.setFormat(match.start(), match.end() - match.start(), fmt)
 
 
-# ====================== 文本编辑控件 ======================
-class PureCFGTextEdit(QTextEdit):
+# ====================== Python专用文本编辑控件（拷贝你PureCFGTextEdit逻辑） ======================
+class PurePyTextEdit(QTextEdit):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.completer: QCompleter | None = None
         self.setFontFamily("Consolas")
         self.setFontPointSize(12)
-        self.setTabStopDistance(4 * 4)  # Tab宽度4字符
+        self.setTabStopDistance(4 * 4)  # Tab等于4空格
 
     def set_completer(self, completer: QCompleter):
         self.completer = completer
         completer.setWidget(self)
 
     def trigger_completion(self):
-        """手动触发补全弹窗"""
         if not self.completer:
             return
         cursor = self.textCursor()
@@ -85,7 +81,6 @@ class PureCFGTextEdit(QTextEdit):
         popup.show()
 
     def keyPressEvent(self, event):
-        c = event.keyCombination()
         # Tab唤起补全
         if event.key() == Qt.Key_Tab and self.completer:
             self.trigger_completion()
@@ -105,33 +100,33 @@ class PureCFGTextEdit(QTextEdit):
         super().focusInEvent(event)
 
 
-# ====================== CFG编辑器主组件 ======================
-class CFGCommandEditor(QWidget):
-    # 完整指令补全模板
-    CFG_SUGGEST = [
-        "add game_object obj_name px py rot sx sy",
-        "add character file:characters/sprite.png x y",
-        "add background file:bg/bg01.png",
-        "add flag flag_name",
-        "remove character index",
-        "remove flag flag_name",
-        "move character idx tx ty ease dur",
-        "switch background file:bg.png instant 0.5",
-        "switch bgm file:bgm/test.ogg 1.0",
-        "animation character idx fade_to alpha duration",
-        "animation character idx shake amp dur",
-        "affection add char_name value",
-        "wait 2.0",
-        "jump dialogue_file file:dialogue/test.cfg",
-        "jump dialogue_index 0",
-        "quit"
+# ====================== Python脚本编辑器主组件，接口完全对齐CFGCommandEditor ======================
+class PyScriptEditor(QWidget):
+    # Python补全候选列表，模仿你CFG_SUGGEST
+    PY_SUGGEST = [
+        "def func_name():",
+        "for i in range(10):",
+        "if condition:",
+        "elif condition:",
+        "else:",
+        "while True:",
+        "print()",
+        "len()",
+        "try:",
+        "except Exception as e:",
+        "import ",
+        "from xxx import yyy",
+        "class MyClass:",
+        "return ",
+        "# ",
+        "\"\"\"docstring\"\"\""
     ]
 
     def __init__(self, decoder=None, parent=None, file_path=None):
         super().__init__(parent)
         self.decoder = decoder
         self.edit_file_path: str | None = file_path
-        self._dirty = False  # 是否修改未保存
+        self._dirty = False
 
         self.init_ui()
         self.init_completer()
@@ -144,6 +139,7 @@ class CFGCommandEditor(QWidget):
         self.update_button_state()
 
     def set_decoder(self, decoder):
+        """外部注入执行器decoder，需要实现 execute(text), execute_line(line), reset()"""
         self.decoder = decoder
         self.update_button_state()
 
@@ -155,7 +151,7 @@ class CFGCommandEditor(QWidget):
         btn_layout = QHBoxLayout()
         self.btn_run_line = QPushButton("执行当前行(Shift+F5)")
         self.btn_run_all = QPushButton("执行全部(F5)")
-        self.btn_reset_decoder = QPushButton("重置CFG解码器")
+        self.btn_reset_decoder = QPushButton("重置Python执行器")
         self.btn_save = QPushButton("保存")
         self.btn_save_as = QPushButton("另存为…")
 
@@ -165,6 +161,7 @@ class CFGCommandEditor(QWidget):
         self.btn_save.clicked.connect(self.save_script)
         self.btn_save_as.clicked.connect(self.save_as)
 
+        # 如果你不需要运行按钮，可以注释下面三行，和你cfg代码保持一致
         #btn_layout.addWidget(self.btn_run_line)
         #btn_layout.addWidget(self.btn_run_all)
         #btn_layout.addWidget(self.btn_reset_decoder)
@@ -172,26 +169,19 @@ class CFGCommandEditor(QWidget):
         btn_layout.addWidget(self.btn_save)
         btn_layout.addWidget(self.btn_save_as)
 
-        self.edit = PureCFGTextEdit()
+        self.edit = PurePyTextEdit()
         self.edit.setPlaceholderText(
-            "CFG脚本编辑器\n"
-            "语法：换行/分号分隔语句，{}支持代码块，//注释\n"
-            "Tab唤起指令补全"
+            "Python脚本编辑器\n"
+            "Tab唤起代码补全\n"
+            "⚠️ 实际执行由外部decoder提供，本组件不内置Python解释器\n"
         )
-        self.hlighter = CFGHighlighter(self.edit.document())
+        self.hlighter = PythonHighlighter(self.edit.document())
 
         layout.addLayout(btn_layout)
         layout.addWidget(self.edit)
 
-        # ========== 修复快捷键，使用QAction ==========
-        #self.act_run_all = self.edit.addAction("执行全部", self.run_all)
-        #self.act_run_all.setShortcut(Qt.Key_F5)
-
-        #self.act_run_line = self.edit.addAction("执行当前行", self.run_current_line)
-        #self.act_run_line.setShortcut("Shift+F5")
-
     def init_completer(self):
-        completer = QCompleter(self.CFG_SUGGEST, self)
+        completer = QCompleter(self.PY_SUGGEST, self)
         completer.setCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
         completer.activated.connect(self.insert_completion)
         self.edit.set_completer(completer)
@@ -206,8 +196,7 @@ class CFGCommandEditor(QWidget):
         self.update_title_label()
 
     def update_title_label(self):
-        """窗口标题标记脏状态"""
-        base = "CFG脚本编辑器"
+        base = "Python脚本编辑器"
         path = self.edit_file_path if self.edit_file_path else "[未命名]"
         star = " *" if self._dirty else ""
         self.setWindowTitle(f"{base} — {path}{star}")
@@ -218,10 +207,10 @@ class CFGCommandEditor(QWidget):
         self.btn_run_all.setEnabled(enable)
         self.btn_reset_decoder.setEnabled(enable)
 
-    # ========== 运行控制 ==========
+    # ========== 运行控制（全部委托外部decoder，本控件不执行任何exec/eval） ==========
     def run_current_line(self):
         if not self.decoder:
-            QMessageBox.warning(self, "警告", "CFG解码器未绑定！")
+            QMessageBox.warning(self, "警告", "Python执行器decoder未绑定！")
             return
         line = self.edit.textCursor().block().text().strip()
         if line:
@@ -229,7 +218,7 @@ class CFGCommandEditor(QWidget):
 
     def run_all(self):
         if not self.decoder:
-            QMessageBox.warning(self, "警告", "CFG解码器未绑定！")
+            QMessageBox.warning(self, "警告", "Python执行器decoder未绑定！")
             return
         text = self.edit.toPlainText()
         if text.strip():
@@ -239,9 +228,9 @@ class CFGCommandEditor(QWidget):
         if not self.decoder:
             return
         self.decoder.reset()
-        QMessageBox.information(self, "提示", "CFG解码器队列已清空重置")
+        QMessageBox.information(self, "提示", "Python执行器已重置")
 
-    # ========== 脚本读写接口 ==========
+    # ========== 文件读写接口，和CFG版本1:1对齐 ==========
     def set_script(self, text: str):
         self.edit.setPlainText(text)
         self._dirty = False
@@ -252,7 +241,7 @@ class CFGCommandEditor(QWidget):
 
     def load_file(self, filepath: str):
         try:
-            with open(filepath, "r", encoding="utf‑8") as f:
+            with open(filepath, "r", encoding="utf-8") as f:
                 self.set_script(f.read())
             self.edit_file_path = filepath
             self._dirty = False
@@ -264,7 +253,7 @@ class CFGCommandEditor(QWidget):
         if not self.edit_file_path:
             return self.save_as()
         try:
-            with open(self.edit_file_path, "w", encoding="utf‑8") as f:
+            with open(self.edit_file_path, "w", encoding="utf-8") as f:
                 f.write(self.get_script())
             self._dirty = False
             self.update_title_label()
@@ -273,7 +262,7 @@ class CFGCommandEditor(QWidget):
 
     def save_as(self):
         path, _ = QFileDialog.getSaveFileName(
-            self, "另存CFG脚本", "", "CFG脚本(*.cfg);;全部文件(*)"
+            self, "另存Python脚本", "", "Python脚本(*.py);;全部文件(*)"
         )
         if not path:
             return

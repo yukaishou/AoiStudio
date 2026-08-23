@@ -63,6 +63,7 @@ class AoiBuildTool:
 
 
 if __name__ == "__main__":
+    print(sys.argv)
     if len(sys.argv) >=4:
         project_path = sys.argv[1]
         output_path = sys.argv[2]
@@ -79,3 +80,4 @@ if __name__ == "__main__":
             exit()
     tool = AoiBuildTool(player_path,project_path,output_path)
     tool.build()
+    input("按Enter键退出...")
