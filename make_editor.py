@@ -1,11 +1,24 @@
 import os
 import shutil
+import subprocess
 from engine_src.tools import assets_bundle_package_build
 import json
 import sys
 import platform
 max_size = 100 * 1024 * 1024
+
+def kill_exes(process_names):
+    """Force kill running processes by name to free locked files"""
+    for name in process_names:
+        subprocess.run(["taskkill", "/F", "/IM", name], 
+                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
 def build(output_dir,editor_ui_ver,player_ver,abt_ver):
+    exe_dir = output_dir+"editor_output/bin"
+    main_exe = output_dir+"editor_output/AoiStudioEditor.exe"
+    # Kill running instances before cleanup
+    kill_exes(["AoiStudioEditor.exe", "AoiStudio_Player.exe", "AoiStudio_Player_debug.exe", 
+               "AoiStudioBuildTool.exe", "AoiStudio_Debugger.exe"])
     if os.path.exists(output_dir+"/editor_output"):
         shutil.rmtree(output_dir+"/editor_output")
         os.makedirs(output_dir+"/editor_output")

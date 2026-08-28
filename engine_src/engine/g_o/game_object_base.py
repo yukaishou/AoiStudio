@@ -73,14 +73,16 @@ class GameObjectBase:
                 log.log(2, f"Error in rendering component[{comp_data['name']}]: {str(e)}")
                 self.set_component_active(comp_data["name"], False)
 
-    def add_component(self, component):
+    def add_component(self, component,is_edit=False,is_script_component=False):
         """添加组件，包装成dict存入，组件实例必须拥有 .name 属性"""
+        active = True
+        if is_edit and is_script_component:
+            active = False
         comp_data = {
             "name": component.name,
-            "active": True,
+            "active": active,
             "object": component
         }
-        #component.start()
         self.components.append(comp_data)
 
     def remove_component(self, component):
@@ -115,3 +117,27 @@ class GameObjectBase:
                 log.log(2, f"Component destroy error: {str(e)}")
         self.components.clear()
         self.active = False
+
+    def set_position(self, position):
+        """设置GameObject位置"""
+        self.transform["position"] = position
+
+    def set_rotation(self, rotation):
+        """设置GameObject旋转"""
+        self.transform["rotation"] = rotation
+
+    def set_scale(self, scale):
+        """设置GameObject缩放"""
+        self.transform["scale"] = scale
+
+    def get_position(self):
+        """获取GameObject位置"""
+        return self.transform["position"]
+
+    def get_rotation(self):
+        """获取GameObject旋转"""
+        return self.transform["rotation"]
+
+    def get_scale(self):
+        """获取GameObject缩放"""
+        return self.transform["scale"]

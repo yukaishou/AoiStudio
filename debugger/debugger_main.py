@@ -1,14 +1,12 @@
 import sys
 import json
-import socket
-import time
-import threading
 
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, QPushButton, QLineEdit, QHBoxLayout,
                              QSplitter, QTextEdit, QTabWidget, QLabel, QSpinBox, QListWidget, QListWidgetItem,
                              QGroupBox, QFormLayout, QMessageBox)
-from PySide6.QtCore import Qt, QObject, Signal, QThread, QTimer
+from PySide6.QtCore import Qt, QObject, Signal, QThread, QTimer, QMutex, QMutexLocker
+from PySide6.QtNetwork import QTcpSocket, QAbstractSocket
 
 
 class TcpClientWorker(QObject):
@@ -16,122 +14,165 @@ class TcpClientWorker(QObject):
     sig_log = Signal(str)
     sig_conn_lost = Signal()
     sig_conn_ok = Signal()
-    sig_quit_app = Signal()   # 新增：通知主线程退出程序
+    sig_quit_app = Signal()
 
-    def __init__(self, host="127.0.0.1", port=8877):
+    def __init__(self):
         super().__init__()
-        self.host = host
-        self.port = port
-        self.sock = None
-        self._connected = False
+        self.host = "127.0.0.1"
+        self.port = 8877
+        self.sock: QTcpSocket = None
+        self._mutex = QMutex()
         self._alive = False
         self._recv_buf = b""
-        self._io_thread = None
 
-        self.ping_timer = QTimer()
-        self.ping_timer.setInterval(250)
+        # 是否曾经成功建立过连接
+        self._has_ever_connected = False
+
+        self.ping_timer = QTimer(self)
+        self.ping_timer.setInterval(1000)
         self.ping_timer.timeout.connect(self._do_ping)
+
+        self.retry_timer = QTimer(self)
+        self.retry_timer.setInterval(2500)
+        self.retry_timer.timeout.connect(self._try_reconnect)
+        self.retry_max_count = 5
+        self.retry_counter = 0
 
     @property
     def is_connected(self):
-        return self._alive
-
-    def _thread_entry(self):
-        try:
-            self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self.sock.settimeout(None)
-            self.sock.connect((self.host, self.port))
-            self._connected = True
-            self._alive = True
-            self._recv_buf = b""
-            self.sig_conn_ok.emit()
-            self.sig_log.emit(f"[GUI] 已连接调试服务 {self.host}:{self.port}")
-        except Exception as e:
-            self.sig_log.emit(f"[GUI] 连接失败: {e}")
-            self.sig_conn_lost.emit()
-            self.sig_quit_app.emit()   # 连接失败 → 请求退出
-            return
-
-        while self._alive and self.sock is not None:
-            try:
-                chunk = self.sock.recv(4096)
-                if not chunk:
-                    break
-                self._recv_buf += chunk
-                while b"\n" in self._recv_buf:
-                    line, self._recv_buf = self._recv_buf.split(b"\n", 1)
-                    if not line.strip():
-                        continue
-                    try:
-                        resp = json.loads(line.decode("utf-8"))
-                        self.sig_recv_response.emit(resp)
-                    except json.JSONDecodeError:
-                        self.sig_log.emit(f"[GUI] json解析失败: {line}")
-            except OSError:
-                break
-            except Exception as e:
-                break
-        self._mark_disconnect()
+        with QMutexLocker(self._mutex):
+            return self._alive
 
     def connect_server(self):
-        self._io_thread = threading.Thread(target=self._thread_entry, daemon=True)
-        self._io_thread.start()
+        self.sock = QTcpSocket(self)
+        self.sock.connected.connect(self._on_socket_connected)
+        self.sock.disconnected.connect(self._on_socket_disconnected)
+        self.sock.readyRead.connect(self._on_socket_read)
+        self.sock.errorOccurred.connect(self._on_socket_error)
+        self._recv_buf = b""
+        self.sock.connectToHost(self.host, self.port)
+
+    def _on_socket_connected(self):
+        with QMutexLocker(self._mutex):
+            self._alive = True
+        self.retry_timer.stop()
+        self.retry_counter = 0
+        self._has_ever_connected = True
+        self.sig_conn_ok.emit()
+        self.sig_log.emit(f"[GUI] 已连接本地调试服务 {self.host}:{self.port}")
+
+    def _on_socket_disconnected(self):
+        self.sig_log.emit("[GUI] socket断开事件")
+        if not self._has_ever_connected:
+            # 启动阶段：从未连上，允许重试
+            self._handle_startup_fail()
+        else:
+            # 已经成功连接过，服务器断开 → 直接退出，不重试
+            self.sig_log.emit("[GUI] 服务器主动关闭连接，准备退出")
+            self._clean_socket()
+            self.sig_quit_app.emit()
+
+    def _on_socket_error(self, err):
+        self.sig_log.emit(f"[GUI] socket错误: {self.sock.errorString()}")
+        if not self._has_ever_connected:
+            # 启动阶段连接失败，执行重试逻辑
+            self._handle_startup_fail()
+        else:
+            # 运行时出错断开，直接退出
+            self.sig_log.emit("[GUI] 运行时连接异常，准备退出")
+            self._clean_socket()
+            self.sig_quit_app.emit()
+
+    def _on_socket_read(self):
+        data = self.sock.readAll().data()
+        self._recv_buf += data
+        while b"\n" in self._recv_buf:
+            line, self._recv_buf = self._recv_buf.split(b"\n", 1)
+            if not line.strip():
+                continue
+            try:
+                resp = json.loads(line.decode("utf-8"))
+                self.sig_recv_response.emit(resp)
+            except json.JSONDecodeError:
+                self.sig_log.emit(f"[GUI] json解析失败: {line}")
 
     def _do_ping(self):
-        if not self._alive:
+        if not self.is_connected:
             return
         try:
-            ping_payload = (json.dumps({"cmd": "ping"}) + "\n").encode("utf-8")
-            self.sock.sendall(ping_payload)
-            runtime_payload = (json.dumps({"cmd": "get_runtime", "params": {}}) + "\n").encode("utf-8")
-            self.sock.sendall(runtime_payload)
+            self._send_raw({"cmd": "ping"})
+            self._send_raw({"cmd": "get_runtime", "params": {}})
         except Exception:
-            self._mark_disconnect()
+            self.sig_log.emit("[GUI] ping发送失败，连接失效，准备退出")
+            self._clean_socket()
+            self.sig_quit_app.emit()
 
-    def _mark_disconnect(self):
-        self._alive = False
-        self._connected = False
-        self.ping_timer.stop()
-        if self.sock:
-            try:
-                self.sock.close()
-            except Exception:
-                pass
-            self.sock = None
-        self.sig_conn_lost.emit()
-        self.sig_quit_app.emit()   # 连接断开 → 请求退出
+    def _send_raw(self, cmd_obj: dict):
+        payload = (json.dumps(cmd_obj, ensure_ascii=False) + "\n").encode("utf-8")
+        if self.sock and self.sock.state() == QAbstractSocket.SocketState.ConnectedState:
+            self.sock.write(payload)
+            self.sock.flush()
 
     def send_command(self, cmd_obj: dict):
         if not self.is_connected:
-            self.sig_log.emit("[GUI] 未连接服务，无法发送指令")
+            self.sig_log.emit("[GUI] 未连接本地服务，无法发送指令")
             return
         try:
-            payload = (json.dumps(cmd_obj, ensure_ascii=False)+"\n").encode("utf-8")
-            self.sock.sendall(payload)
+            self._send_raw(cmd_obj)
         except Exception as e:
             self.sig_log.emit(f"[GUI] send error: {e}")
-            self._mark_disconnect()
+            self._clean_socket()
+            self.sig_quit_app.emit()
+
+    def _clean_socket(self):
+        """清理socket，不处理重试"""
+        with QMutexLocker(self._mutex):
+            self._alive = False
+        self.ping_timer.stop()
+        self.retry_timer.stop()
+        if self.sock:
+            self.sock.disconnectFromHost()
+            #self.sock.deleteLater()
+            self.sock = None
+        self.sig_conn_lost.emit()
+
+    def _handle_startup_fail(self):
+        """只用于启动阶段（_has_ever_connected=False）的连接失败，做重试计数"""
+        self._clean_socket()
+        if self.retry_counter < self.retry_max_count:
+            self.retry_counter += 1
+            remain = self.retry_max_count - self.retry_counter
+            self.sig_log.emit(f"[GUI] 2.5s后尝试初次连接，剩余重试:{remain}")
+            self.retry_timer.start()
+        else:
+            self.sig_log.emit("[GUI] 启动阶段5次尝试全部失败，准备退出调试器")
+            self.sig_quit_app.emit()
+
+    def _try_reconnect(self):
+        if self._has_ever_connected:
+            self.retry_timer.stop()
+            return
+        self.connect_server()
 
     def close_socket(self):
-        self._mark_disconnect()
-        if self._io_thread is not None and self._io_thread.is_alive():
-            self._io_thread.join(timeout=1.0)
-
+        """用户手动关闭窗口"""
+        self.retry_timer.stop()
+        with QMutexLocker(self._mutex):
+            self._alive = False
+        self.ping_timer.stop()
+        if self.sock:
+            self.sock.disconnectFromHost()
 
 class DebuggerGuiWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("AoiStudio 调试器")
-        if hasattr(sys, "_MEIPASS"):
-            self.setWindowIcon(QIcon(f"{sys._MEIPASS}/icons/AoiStudio.png"))
-        else:
-            self.setWindowIcon(QIcon("AoiStudio.png"))
+        self.setWindowTitle("AoiStudio 本地调试器")
         self.resize(1050, 700)
         self._snapshot = None
         self._last_snapshot_raw = ""
 
         self.tcp_thread = QThread()
-        self.tcp_client = TcpClientWorker(host="127.0.0.1", port=8877)
+        self.tcp_client = TcpClientWorker()
         self.tcp_client.moveToThread(self.tcp_thread)
         self.tcp_thread.started.connect(self.tcp_client.connect_server)
 
@@ -140,8 +181,7 @@ class DebuggerGuiWindow(QMainWindow):
         self.tcp_client.sig_conn_lost.connect(self._on_conn_lost)
         self.tcp_client.sig_conn_ok.connect(self._on_conn_ok)
         self.tcp_client.sig_conn_ok.connect(self.tcp_client.ping_timer.start)
-        # 绑定退出信号，主线程执行close
-        self.tcp_client.sig_quit_app.connect(self.close)
+        self.tcp_client.sig_quit_app.connect(self._on_quit_request)
 
         self.tcp_thread.start()
 
@@ -149,7 +189,7 @@ class DebuggerGuiWindow(QMainWindow):
         self.setCentralWidget(central)
         main_layout = QVBoxLayout(central)
 
-        self.conn_status_label = QLabel("🔴 未连接服务器")
+        self.conn_status_label = QLabel("🔴 未连接本地服务器")
         main_layout.addWidget(self.conn_status_label)
 
         splitter = QSplitter(Qt.Horizontal)
@@ -187,6 +227,10 @@ class DebuggerGuiWindow(QMainWindow):
         main_layout.setStretch(0, 1)
         main_layout.setStretch(1, 8)
         main_layout.setStretch(2, 2)
+
+    def _on_quit_request(self):
+        #QMessageBox.warning(self, "调试器退出", "连接条件不满足，调试器即将关闭")
+        self.close()
 
     def _create_tab_scene_readonly(self):
         w = QWidget()
@@ -276,11 +320,11 @@ class DebuggerGuiWindow(QMainWindow):
                 self._refresh_ui_from_snapshot()
 
     def _on_conn_ok(self):
-        self.conn_status_label.setText("🟢 已连接服务器")
+        self.conn_status_label.setText("🟢 已连接本地服务器")
 
     def _on_conn_lost(self):
-        self.conn_status_label.setText("🔴 断开服务器")
-        self._append_log("[GUI] 与调试服务断开连接")
+        self.conn_status_label.setText("🔴 断开本地服务器")
+        self._append_log("[GUI] 与本地调试服务断开连接")
 
     def _append_log(self, text: str):
         self.log_text.append(text)
@@ -339,7 +383,7 @@ class DebuggerGuiWindow(QMainWindow):
     def closeEvent(self, event):
         self.tcp_client.close_socket()
         self.tcp_thread.quit()
-        self.tcp_thread.wait()
+        self.tcp_thread.wait(2000)
         event.accept()
 
 

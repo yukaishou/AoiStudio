@@ -238,7 +238,7 @@ class BaseCharacter:
 
     # ========= GAL演出跳跃函数 =========
     def jump(self, jump_height=60, duration=0.4):
-        self.engine.event.emit("jump", {"jump_height": jump_height, "duration": duration})  # 触发事件
+        self.engine.event.emit("character_jump", {"jump_height": jump_height, "duration": duration})  # 触发事件
         """
         GalGame角色演出跳一跳，只视觉上浮下落，逻辑坐标不变
         :param jump_height: 跳跃最大高度(逻辑像素)

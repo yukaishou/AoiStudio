@@ -3,6 +3,35 @@ import os
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QTextEdit, QPushButton,
                                QCompleter, QFileDialog, QMessageBox)
 from PySide6.QtCore import Qt, QStringListModel, QKeyCombination
+
+
+# CFG指令补全模板（模块级常量，供编辑器和高亮器共享）
+CFG_SUGGEST = [
+    "add game_object obj_name px py rot sx sy",
+    "add component obj_name ComponentName {{\"key\": \"value\"}}",
+    "add character file:characters/sprite.png x y",
+    "add background file:bg/bg01.png",
+    "add flag flag_name",
+    "remove character index",
+    "remove flag flag_name",
+    "move character idx tx ty ease dur",
+    "switch background file:bg.png fade 0.5",
+    "switch bgm file:bgm/test.ogg 1.0",
+    "animation character idx fade_to alpha duration",
+    "animation character idx shake amp dur",
+    "animation character idx jump height dur",
+    "affection add char_name value",
+    "affection set char_name value",
+    "affection reduce char_name value",
+    "wait 2.0",
+    "run file:path/to/script.cfg",
+    "jump dialogue_file file:dialogue/test.cfg",
+    "jump dialogue_index 0",
+    "if have_flags:flag_name",
+    "else",
+    "endif",
+    "quit"
+]
 from PySide6.QtGui import (QSyntaxHighlighter, QTextCharFormat, QColor, QKeySequence,
                            QTextCursor)
 
@@ -11,6 +40,7 @@ from PySide6.QtGui import (QSyntaxHighlighter, QTextCharFormat, QColor, QKeySequ
 class CFGHighlighter(QSyntaxHighlighter):
     def __init__(self, parent):
         super().__init__(parent)
+        #self.setDocumentHighlightingEnabled(True)
         self.rules = []
 
         # 1.注释 优先级最高
@@ -21,7 +51,7 @@ class CFGHighlighter(QSyntaxHighlighter):
         # 主命令关键字
         cmd_format = QTextCharFormat()
         cmd_format.setForeground(QColor("#569cd6"))
-        cmd_words = r"\b(add|move|switch|animation|remove|affection|wait|jump|quit|run)\b"
+        cmd_words = r"\b(add|move|switch|animation|remove|affection|wait|jump|quit|run|if|else|endif|true|false)\b"
         self.rules.append((re.compile(cmd_words), cmd_format))
 
         # 文件路径 file:xxx
@@ -33,6 +63,12 @@ class CFGHighlighter(QSyntaxHighlighter):
         flag_format = QTextCharFormat()
         flag_format.setForeground(QColor("#C586C0"))
         self.rules.append((re.compile(r"\bflag:\w+\b"), flag_format))
+        self.rules.append((re.compile(r"\bhave_flags:\S+"), flag_format))
+
+        # 条件前缀
+        cond_format = QTextCharFormat()
+        cond_format.setForeground(QColor("#C586C0"))
+        self.rules.append((re.compile(r"\baffection:\S+"), cond_format))
 
         # 数字（整数浮点数）
         num_format = QTextCharFormat()
@@ -71,10 +107,24 @@ class PureCFGTextEdit(QTextEdit):
         completer.setWidget(self)
 
     def trigger_completion(self):
-        """手动触发补全弹窗"""
+        """手动触发补全弹窗，根据当前行首词过滤建议"""
         if not self.completer:
             return
         cursor = self.textCursor()
+        block = cursor.block()
+        line_text = block.text().strip()
+        first_word = line_text.split()[0].lower() if line_text else ""
+
+        # 根据行首词过滤补全项
+        filtered = [s for s in CFG_SUGGEST
+                     if s.lower().startswith(first_word) or not first_word]
+
+        completer_model = self.completer.completionModel()
+        original_strings = [completer_model.data(completer_model.index(i))
+                            for i in range(completer_model.rowCount())]
+        # 临时替换补全列表
+        self.completer.setModel(QStringListModel(filtered if filtered else original_strings))
+
         cursor.select(QTextCursor.SelectionType.WordUnderCursor)
         prefix = cursor.selectedText()
         self.completer.setCompletionPrefix(prefix)
@@ -97,6 +147,54 @@ class PureCFGTextEdit(QTextEdit):
                 self.completer.popup().hide()
                 return
 
+        # Enter: 自动缩进
+        if event.key() in (Qt.Key_Enter, Qt.Key_Return):
+            cursor = self.textCursor()
+            block = cursor.block()
+            line_text = block.text().strip()
+
+            # 当前行以 if 或 else 开头 → 缩进
+            if line_text:
+                first_word = line_text.split()[0].lower()
+                if first_word in ("if", "else"):
+                    cursor.insertBlock()
+                    current_indent = block.text()[:len(block.text()) - len(block.text().lstrip())]
+                    cursor.insertText(current_indent + "    ")
+                    event.accept()
+                    return
+                # 当前行是 endif 或 else → 反缩进
+                if first_word in ("endif",):
+                    cursor.insertBlock()
+                    current_indent = block.text()[:len(block.text()) - len(block.text().lstrip())]
+                    # 去掉一级缩进
+                    dedent = current_indent[:-4] if len(current_indent) >= 4 else ""
+                    cursor.insertText(dedent)
+                    event.accept()
+                    return
+
+            # 否则保留当前行缩进
+            cursor.insertBlock()
+            current_indent = block.text()[:len(block.text()) - len(block.text().lstrip())]
+            cursor.insertText(current_indent)
+            event.accept()
+            return
+
+        # Backspace: 在行首且前面是空格时删除一个缩进单位(4空格)
+        if event.key() == Qt.Key_Backspace:
+            cursor = self.textCursor()
+            if cursor.columnNumber() > 0:
+                block = cursor.block()
+                text_before = block.text()[:cursor.columnNumber()]
+                if text_before == text_before.lstrip():
+                    # 光标后无非空白字符（光标在缩进末尾或已删到内容）
+                    indent_len = len(text_before) - len(text_before.lstrip())
+                    delete_count = min(indent_len, 4)
+                    if delete_count > 0:
+                        for _ in range(delete_count):
+                            cursor.deletePreviousChar()
+                        event.accept()
+                        return
+
         super().keyPressEvent(event)
 
     def focusInEvent(self, event):
@@ -107,26 +205,6 @@ class PureCFGTextEdit(QTextEdit):
 
 # ====================== CFG编辑器主组件 ======================
 class CFGCommandEditor(QWidget):
-    # 完整指令补全模板
-    CFG_SUGGEST = [
-        "add game_object obj_name px py rot sx sy",
-        "add character file:characters/sprite.png x y",
-        "add background file:bg/bg01.png",
-        "add flag flag_name",
-        "remove character index",
-        "remove flag flag_name",
-        "move character idx tx ty ease dur",
-        "switch background file:bg.png instant 0.5",
-        "switch bgm file:bgm/test.ogg 1.0",
-        "animation character idx fade_to alpha duration",
-        "animation character idx shake amp dur",
-        "affection add char_name value",
-        "wait 2.0",
-        "jump dialogue_file file:dialogue/test.cfg",
-        "jump dialogue_index 0",
-        "quit"
-    ]
-
     def __init__(self, decoder=None, parent=None, file_path=None):
         super().__init__(parent)
         self.decoder = decoder
@@ -175,7 +253,8 @@ class CFGCommandEditor(QWidget):
         self.edit = PureCFGTextEdit()
         self.edit.setPlaceholderText(
             "CFG脚本编辑器\n"
-            "语法：换行/分号分隔语句，{}支持代码块，//注释\n"
+            "语法：换行分隔语句，{}支持代码块，//注释\n"
+            "if/else/endif 支持条件分支，Enter自动缩进\n"
             "Tab唤起指令补全"
         )
         self.hlighter = CFGHighlighter(self.edit.document())
@@ -191,14 +270,24 @@ class CFGCommandEditor(QWidget):
         #self.act_run_line.setShortcut("Shift+F5")
 
     def init_completer(self):
-        completer = QCompleter(self.CFG_SUGGEST, self)
+        completer = QCompleter(CFG_SUGGEST, self)
         completer.setCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
         completer.activated.connect(self.insert_completion)
         self.edit.set_completer(completer)
 
     def insert_completion(self, text: str):
         cursor = self.edit.textCursor()
-        cursor.select(QTextCursor.SelectionType.WordUnderCursor)
+        # 选中当前行的已输入内容并替换为补全文本
+        block_start = cursor.block().position()
+        # 找到当前行光标前第一个非空白字符位置
+        block_text = cursor.block().text()
+        visible_pos = cursor.position() - block_start
+        # 回退到当前单词开头
+        i = visible_pos
+        while i > 0 and not block_text[i-1].isspace():
+            i -= 1
+        cursor.setPosition(block_start + i)
+        cursor.setPosition(cursor.position() + (visible_pos - i), QTextCursor.MoveMode.KeepAnchor)
         cursor.insertText(text)
 
     def on_text_changed(self):

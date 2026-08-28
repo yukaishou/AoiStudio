@@ -103,6 +103,8 @@ class AssetManager:
         :param module_name: 动态模块名
         :return: module对象 / None失败
         """
+        import sys
+        
         norm_path = self._normalize_asset_path(rel_path)
         cache_key = f"pak:{norm_path}_{module_name}"
 
@@ -117,50 +119,98 @@ class AssetManager:
             log.log(2, f"[RES] pak_finder not initialized, cannot load pak model {norm_path}")
             return None
 
+        # 构建要尝试的路径列表：原始路径 + 另一种扩展名
+        paths_to_try = [norm_path]
+        suffix = Path(norm_path).suffix
+        if suffix == ".py":
+            alt_path = norm_path[:-3] + ".pyc"
+            paths_to_try.append(alt_path)
+        elif suffix == ".pyc":
+            alt_path = norm_path[:-4] + ".py"
+            paths_to_try.append(alt_path)
+
+        resolved_path = None
+        for try_path in paths_to_try:
+            package_info = self.pak_finder.find_file_by_relative_path(try_path)
+            if package_info and package_info[0].get("package"):
+                resolved_path = try_path
+                break
+
+        if resolved_path is None:
+            log.log(2, f"[RES] pak model file not found: {norm_path}")
+            return None
+
         try:
-            package_info = self.pak_finder.find_file_by_relative_path(norm_path)
-            if not package_info or not package_info[0].get("package"):
-                log.log(2, f"[RES] pak model file not found: {norm_path}")
-                return None
+            package_info = self.pak_finder.find_file_by_relative_path(resolved_path)
             pak_filename = package_info[0]["package"]
             pak_fullpath = os.path.join("paks", pak_filename)
 
             with zipfile.ZipFile(pak_fullpath, "r") as zf:
-                raw_bytes = zf.read(norm_path)
+                raw_bytes = zf.read(resolved_path)
 
-            suffix = Path(norm_path).suffix
-            # 创建临时py/pyc文件，delete=False，加载完手动删除
-            with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp_f:
-                tmp_f.write(raw_bytes)
-                tmp_file_path = tmp_f.name
+            resolved_suffix = Path(resolved_path).suffix
+            tmp_file_path = None
 
-            log.log(0, f"[RES] Loading pak model {norm_path} -> temp:{tmp_file_path}")
+            if resolved_suffix == ".pyc":
+                # .pyc 需要放到 __pycache__ 目录下，并用正确的命名格式
+                # 格式: module.cpython-XY.pyc
+                # module_name 可能包含路径和扩展名，需要用纯模块名
+                import re
+                pure_name = Path(module_name).stem  # 去掉扩展名
+                # 路径分隔符替换为下划线，因为文件名不能包含 /
+                safe_name = pure_name.replace(os.sep, "_").replace("/", "_")
+                cache_dir = tempfile.mkdtemp("__pycache__")
+                pyc_name = f"{safe_name}.cpython-{sys.version_info.major}{sys.version_info.minor}.pyc"
+                tmp_file_path = os.path.join(cache_dir, pyc_name)
+                with open(tmp_file_path, "wb") as f:
+                    f.write(raw_bytes)
+                log.log(0, f"[RES] Loading pak pyc model {resolved_path} -> temp:{tmp_file_path}")
+            else:
+                # .py 文件直接用临时文件
+                with tempfile.NamedTemporaryFile(delete=False, suffix=resolved_suffix) as tmp_f:
+                    tmp_f.write(raw_bytes)
+                    tmp_file_path = tmp_f.name
+                log.log(0, f"[RES] Loading pak model {resolved_path} -> temp:{tmp_file_path}")
+
             spec = importlib.util.spec_from_file_location(module_name, tmp_file_path)
             if spec is None:
-                os.unlink(tmp_file_path)
-                log.log(2, f"[RES] cannot create spec for pak model {norm_path}")
+                self._cleanup_temp_file(tmp_file_path, resolved_suffix == ".pyc")
+                log.log(2, f"[RES] cannot create spec for pak model {resolved_path}")
                 return None
 
             module = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(module)
 
-            # 删除临时文件
-            os.unlink(tmp_file_path)
+            # 清理临时文件
+            self._cleanup_temp_file(tmp_file_path, resolved_suffix == ".pyc")
 
             self._model_cache[cache_key] = module
             return module
 
         except KeyError:
-            log.log(2, f"[RES] pak zip entry missing: {norm_path}")
+            log.log(2, f"[RES] pak zip entry missing: {resolved_path}")
         except Exception as e:
-            log.log(2, f"[RES] load pak model {norm_path} error: {e}")
+            log.log(2, f"[RES] load pak model {resolved_path} error: {e}")
         return None
+
+    def _cleanup_temp_file(self, tmp_path: str, is_pyc: bool):
+        """清理临时文件，pyc需要同时删除__pycache__目录"""
+        try:
+            if os.path.exists(tmp_path):
+                os.unlink(tmp_path)
+            if is_pyc:
+                parent = os.path.dirname(tmp_path)
+                if os.path.exists(parent):
+                    import shutil
+                    shutil.rmtree(parent, ignore_errors=True)
+        except Exception as e:
+            log.log(2, f"[RES] cleanup temp file error: {e}")
 
     def load_python_script(self,path):
         if os.path.exists("res/"+path):
-            return self.load_model(os.path.abspath("res/"+path),os.path.basename(path))
+            return self.load_model(os.path.abspath("res/"+path),path)
         else:
-            return self.load_model_from_package(path,os.path.basename(path))
+            return self.load_model_from_package(path,path)
     # ==========================================================================
 
     def _find_existing_path(self, *paths):

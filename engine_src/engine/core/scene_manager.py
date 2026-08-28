@@ -1,6 +1,7 @@
 import pygame
 from engine_src.engine.core import base_background, base_character
 from engine_src.engine.core import base_sound
+from engine_src.engine.core.base_sound import BaseMusic, BaseSound
 from engine_src.engine.core import log
 
 
@@ -53,12 +54,12 @@ class Scene:
         self.engine.event.emit("scene_bgm_switch", {"bgm_path": bgm_path, "fade_speed": fade_speed})
         if len(self.bgm) > 0:
             self.bgm[0].fade_out(fade_speed)
-            bgm = base_sound.BaseSound(bgm_path, self.engine)
+            bgm = BaseSound(bgm_path, self.engine)
             bgm.fade_in(fade_speed)
             self.bgm.append(bgm)
         else:
-            bgm = base_sound.BaseSound(bgm_path, self.engine)
-            bgm.play(-1)
+            bgm = BaseSound(bgm_path, self.engine)
+            bgm.fade_in(fade_speed, target_volume=0.5)
             self.bgm.append(bgm)
 
     def change_scene_center(self, center):

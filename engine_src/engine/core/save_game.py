@@ -9,6 +9,8 @@ class SaveGame:
         self.engine = engine
 
     def save_game(self, path):
+        if not self.engine.in_dialog_game:
+            return
         self.engine.event.emit("save_game", {"save_path": path})
         dialogue_file_path = self.engine.dialog.dialogue_file_path
         if self.engine.dialog.current_dialogue_index == 1:

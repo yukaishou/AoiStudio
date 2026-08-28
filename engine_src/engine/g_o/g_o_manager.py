@@ -1,10 +1,13 @@
 from engine_src.engine.core import log
 from engine_src.engine.g_o.game_object_base import GameObjectBase
-from engine_src.engine.g_o.components import sprite_renderer, audio_player
+from engine_src.engine.g_o.components import sprite_renderer, audio_player, collsion_box
+from engine_src.engine.core.global_go_components import global_ui_root
 
 COMPONENTS_MAP = {
     "SpriteRenderer": sprite_renderer.SpriteRenderer,
     "AudioPlayer":audio_player.AudioPlayer,
+    "CollisionBox":collsion_box.CollisionBox,
+    "GlobalUIRoot":global_ui_root.GlobalUIRoot
 }
 
 class GOManager:
@@ -64,3 +67,20 @@ class GOManager:
 
     def get_component_by_name(self,component_name):
         return COMPONENTS_MAP.get(component_name,None)
+
+    def load_scene(self,scene_file_path:str):
+        self.engine.event.emit("scene_loaded",{"path":scene_file_path})
+        log.log(0,"[SCENE] "+scene_file_path)
+        scene_content = self.engine.resource_manager.load_json_file(scene_file_path)
+
+        for go_data in scene_content["game_objects"]:
+            go = self.create_game_object(go_data["name"],go_data["transform"],self.get_game_object(go_data.get("parent",None)))
+            for comp_data in go_data.get("components",[]):
+                self.create_component(go,comp_data["name"],comp_data["props"])
+
+    def clear_scene(self):
+        self.engine.event.emit("scene_cleared")
+        for go in self.game_objects:
+            go.destroy()
+
+

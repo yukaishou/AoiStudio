@@ -27,6 +27,8 @@ from editor import editor_character
 from editor import editor_main_menu_settings
 from editor import editor_doc_view
 from editor import editor_python_edit
+import subprocess
+
 import zipfile
 
 
@@ -690,8 +692,25 @@ class MainEditorWindow(QMainWindow):
             json.dump(self.editor_config, f, ensure_ascii=False, indent=4)
         self.apply_theme(theme_name)
 
+    def safe_decode(self,b: bytes) -> str:
+        """兼容Windows GBK / UTF‑8 日志解码，不会抛出异常"""
+        if not b:
+            return ""
+        try:
+            return b.decode("utf-8")
+        except UnicodeDecodeError:
+            try:
+                return b.decode("gbk")
+            except UnicodeDecodeError:
+                return b.decode("utf-8", errors="replace")
+
     def preview_game(self):
-        debug_player_path = open("caches/debug_player_path.txt", encoding="utf-8").read().strip()
+        try:
+            debug_player_path = open("caches/debug_player_path.txt", encoding="utf-8").read().strip()
+        except Exception:
+            QMessageBox.warning(self, "错误", "读取播放器路径缓存失败")
+            return
+
         if not os.path.exists(debug_player_path):
             QMessageBox.warning(self, "播放器缺失", "请先安装游戏播放器")
             return
@@ -700,28 +719,63 @@ class MainEditorWindow(QMainWindow):
             return
 
         if check_game_file_full.check_game_file_full(self.project_path) != check_game_file_full.NOT_MISS:
-            ret = QMessageBox.question(self, "构建剧本索引", "检测到资源缺失，是否构建剧本索引？", QMessageBox.Yes | QMessageBox.No)
+            ret = QMessageBox.question(self, "构建剧本索引", "检测到资源缺失，是否构建剧本索引？",
+                                       QMessageBox.Yes | QMessageBox.No)
             if ret == QMessageBox.Yes:
                 self.build_id_file()
             else:
                 return
 
-        self.debugger_path = open("caches/debugger_path.txt", encoding="utf-8").read().strip()
+        try:
+            self.debugger_path = open("caches/debugger_path.txt", encoding="utf-8").read().strip()
+        except Exception:
+            self.debugger_path = ""
+
+        # 保存进程对象，用于后续关闭预览
+        self._preview_game_proc = None
         threading.Thread(target=self.preview_game_thread, daemon=True).start()
         threading.Thread(target=self.preview_game_debugger, daemon=True).start()
 
     def preview_game_thread(self):
-        o_path = os.getcwd()
         player_path = open("caches/debug_player_path.txt", encoding="utf-8").read().strip()
-        os.chdir(self.project_path)
-        os.system(f'"{player_path}"')
-        os.chdir(o_path)
+        project_cwd = self.project_path
+
+        try:
+            self._preview_game_proc = subprocess.Popen(
+                [player_path],
+                cwd=project_cwd,  # ✅子进程单独工作目录，不再用os.chdir！
+                bufsize=0,
+                creationflags=subprocess.CREATE_NEW_CONSOLE  # ✅子进程不创建控制台窗口，避免干扰编辑器UI
+            )
+            # 循环读取stdout日志
+            while True:
+                raw = self._preview_game_proc.stdout.readline()
+                if not raw:
+                    break
+                text = self.safe_decode(b=raw)
+                # 这里text就是引擎输出的日志，你可以emit信号给到编辑器UI日志面板
+                # self.sig_log.emit(text)
+
+            # 读取stderr
+            while True:
+                raw_err = self._preview_game_proc.stderr.readline()
+                if not raw_err:
+                    break
+                text_err = self.safe_decode(raw_err)
+
+            self._preview_game_proc.wait()
+        except Exception as e:
+            print(f"[预览启动异常] {e}")
+        self._preview_game_proc = None
 
     def preview_game_debugger(self):
-        time.sleep(3.0)
         dp = self.debugger_path.strip()
-        if os.path.exists(dp):
-            os.system(f'"{dp}"')
+        if not dp or not os.path.exists(dp):
+            return
+        try:
+            subprocess.Popen([dp],creationflags=subprocess.CREATE_NO_WINDOW)
+        except Exception as e:
+            print(f"[调试器启动失败] {e}")
 
     def pause_all_audio(self, exclude=None):
         for i in range(self.tab_widget.count()):
@@ -920,8 +974,8 @@ class MainEditorWindow(QMainWindow):
             ).start()
 
     def project_build_thread(self, output_path, abt_path, pl_path):
-        cmd = f'"{abt_path}" "{self.project_path}" "{output_path}" "{pl_path}"'
-        os.system(cmd)
+        cmd = [abt_path, self.project_path, output_path, pl_path]
+        subprocess.Popen(cmd, creationflags=subprocess.CREATE_NEW_CONSOLE)
 
     def edit_character(self):
         if not self.is_opening_project:
