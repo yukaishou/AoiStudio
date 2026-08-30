@@ -9,12 +9,27 @@ import re
 # 指令映射表：原始指令关键字 -> cfg_c 标签及参数定义
 COMMAND_MAP = {
     "add character": {"tag": "[ADD] [CHAR]:", "params": ["PATH", "X", "Y"]},
-    "switch background": {"tag": "[SWITCH] [BG]:", "params": ["PATH", "FADE"]},
+    "add background": {"tag": "[ADD] [BG]:", "params": ["PATH", "X", "Y"]},
+    "add game_object": {"tag": "[ADD] [GO]:", "params": ["NAME"]},
+    "add component": {"tag": "[ADD] [COMP]:", "params": ["GO_NAME", "COMP_TYPE"]},
+    "add flag": {"tag": "[ADD] [FLAG]:", "params": ["FLAG_NAME"]},
+    "switch background": {"tag": "[SWITCH] [BG]:", "params": ["PATH", "TRANSITION", "DURATION"]},
+    "switch bgm": {"tag": "[SWITCH] [BGM]:", "params": ["PATH", "FADE_DURATION"]},
+    "move character": {"tag": "[MOVE] [CHAR]:", "params": ["INDEX", "X", "Y", "EASING", "DURATION"]},
+    "animation character": {"tag": "[ANIM] [CHAR]:", "params": ["INDEX", "TYPE", "PARAM1", "PARAM2", "DURATION"]},
     "wait": {"tag": "[WAIT]:", "params": ["TIME"]},
-    "show text": {"tag": "[SHOW] [TEXT]:", "params": ["CONTENT"]},
-    "play bgm": {"tag": "[PLAY] [BGM]:", "params": ["PATH"]},
-    "stop bgm": {"tag": "[STOP] [BGM]:", "params": []},
-    "transition": {"tag": "[TRANSITION]:", "params": ["TYPE", "TIME"]},
+    "quit": {"tag": "[QUIT]:", "params": []},
+    "affection": {"tag": "[AFFECTION]:", "params": ["CHAR_NAME", "OP", "VALUE"]},
+    "remove character": {"tag": "[REMOVE] [CHAR]:", "params": ["INDEX"]},
+    "remove background": {"tag": "[REMOVE] [BG]:", "params": ["INDEX"]},
+    "jump dialogue_file": {"tag": "[JUMP] [FILE]:", "params": ["PATH"]},
+    "jump dialogue_index": {"tag": "[JUMP] [INDEX]:", "params": ["INDEX"]},
+    "run file": {"tag": "[RUN] [FILE]:", "params": ["PATH"]},
+    "if": {"tag": "[IF]:", "params": ["CONDITION", "TRUE_FILE", "FALSE_FILE"]},
+    "set": {"tag": "[SET]:", "params": ["VAR_NAME", "VALUE"]},
+    "transition": {"tag": "[TRANSITION]:", "params": ["TYPE", "DURATION"]},
+    "show_cg": {"tag": "[SHOW] [CG]:", "params": ["PATH", "TITLE", "DESCRIPTION"]},
+    "hide_cg": {"tag": "[HIDE] [CG]:", "params": ["DURATION"]},
 }
 
 def remove_comments(line):

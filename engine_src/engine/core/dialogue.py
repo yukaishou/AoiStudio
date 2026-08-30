@@ -86,29 +86,63 @@ class Dialogue:
 
     def _load_cfg_script(self, script_path: str) -> str:
         """加载 CFG 脚本，自动处理 .cfg_c 格式的转换"""
-        # 检查是否是 .cfg_c 格式
-        if script_path.endswith('.cfg_c'):
+        # 首先尝试直接加载
+        script_content = self.engine.resource_manager.load_text_file(script_path)
+        
+        # 如果加载失败，尝试添加 _c 后缀（兼容旧逻辑）
+        if script_content is None and not script_path.endswith('_c'):
+            script_path_with_c = script_path + "_c"
+            script_content = self.engine.resource_manager.load_text_file(script_path_with_c)
+            if script_content is not None:
+                script_path = script_path_with_c
+        
+        # 如果仍然没有内容，返回空字符串
+        if script_content is None:
+            log.log(2, f"无法加载CFG脚本: {script_path}")
+            return ""
+        
+        # 检查是否是 .cfg_c 格式（通过内容检测，而非文件扩展名）
+        if script_path.endswith('.cfg_c') or (script_content.strip() and script_content.strip().startswith('[')):
             if decompile_cfgc_to_cfg is None:
                 log.log(2, f"反编译器未加载，无法处理 .cfg_c 文件: {script_path}")
                 return ""
             
-            # 生成临时 .cfg 文件路径
-            temp_cfg_path = script_path[:-4] + ".cfg"  # 去掉 _c 后缀
+            # 生成临时文件路径（使用绝对路径避免相对路径问题）
+            import tempfile
+            temp_dir = os.path.dirname(os.path.abspath(__file__))
+            temp_cfg_c = os.path.join(temp_dir, 'temp_runtime.cfg_c')
+            temp_cfg = os.path.join(temp_dir, 'temp_runtime.cfg')
             
             try:
+                # 写入临时.cfg_c文件
+                with open(temp_cfg_c, "w", encoding="utf-8") as f:
+                    f.write(script_content)
+                
                 # 执行反编译
-                decompile_cfgc_to_cfg(script_path, temp_cfg_path)
-                # 加载转换后的文件
-                cfg_text = self.engine.resource_manager.load_text_file(temp_cfg_path)
-                # 可选：清理临时文件
-                # os.remove(temp_cfg_path)
+                decompile_cfgc_to_cfg(temp_cfg_c, temp_cfg)
+                
+                # 读取反编译后的内容
+                with open(temp_cfg, "r", encoding="utf-8") as f:
+                    cfg_text = f.read()
+                
+                # 清理临时文件
+                if os.path.exists(temp_cfg_c):
+                    os.remove(temp_cfg_c)
+                if os.path.exists(temp_cfg):
+                    os.remove(temp_cfg)
+                
                 return cfg_text
             except Exception as e:
                 log.log(2, f"反编译 .cfg_c 文件失败 {script_path}: {e}")
+                # 清理临时文件（即使出错也要清理）
+                if os.path.exists(temp_cfg_c):
+                    os.remove(temp_cfg_c)
+                if os.path.exists(temp_cfg):
+                    os.remove(temp_cfg)
                 return ""
         else:
-            # 普通 .cfg 文件，直接加载
-            return self.engine.resource_manager.load_text_file(script_path)
+            # 普通 .cfg 文件，直接返回内容
+            return script_content
 
     def load_dialogue(self, file_path):
         self.engine.event.emit("dialogue_load", {"dialogue_file_path": file_path})

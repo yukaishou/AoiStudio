@@ -56,6 +56,11 @@ class UIManager:
     def update(self, dt):
         if self.root:
             self.root.update(dt)
+        
+        # 更新所有CG查看器
+        for viewer in self.cg_viewers:
+            if viewer:
+                viewer.update(dt)
 
     def draw(self, surface):
         # 先绘制 UI 根节点

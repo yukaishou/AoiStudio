@@ -216,20 +216,20 @@ class Engine:
             self.scene.draw(self.screen)
             self.g_o_manager.render(self.screen)
             self.cfg_decoder.update_wait(pygame.time.get_ticks())
-            
-            # 绘制屏幕转场效果
-            self.screen_transition.draw(self.screen)
 
             if not self.is_looking_backtext:
                 self.dialog_table.update(delta_time)
                 self.dialog_choice.update()
+            self.ugc_ui_manager.update(delta_time)
             self.ugc_ui_manager.draw(self.screen)
-            # 调整绘制顺序：先画对话框，最后画 UGC UI (包含 CG)
+            # 绘制屏幕转场效果
+            self.screen_transition.draw(self.screen)
+
+            # 调整绘制顺序：先画对话框，再画UI，最后画转场效果
             if self.in_dialog_game:
                 self.dialog_table.render()
                 self.dialog_choice.render()
                 self.dialog_backlog.draw(self.screen)
-            
 
 
             self.plugin_manager.update()
