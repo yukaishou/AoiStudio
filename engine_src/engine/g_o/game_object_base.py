@@ -83,6 +83,7 @@ class GameObjectBase:
             "active": active,
             "object": component
         }
+        log.log(0, "Adding component: " + component.name + " to GameObject: " + self.name)
         self.components.append(comp_data)
 
     def remove_component(self, component):
@@ -141,3 +142,43 @@ class GameObjectBase:
     def get_scale(self):
         """获取GameObject缩放"""
         return self.transform["scale"]
+
+    def get_save_data(self):
+        """获取游戏对象的存档数据"""
+        components_data = []
+        for comp_data in self.components:
+            try:
+                comp_instance = comp_data["object"]
+                comp_save_data = {
+                    "name": comp_data["name"],
+                    "active": comp_data["active"],
+                    "properties": comp_instance.get_save_data()
+                }
+                components_data.append(comp_save_data)
+            except Exception as e:
+                log.log(2, f"Error saving component [{comp_data['name']}]: {e}")
+
+        return {
+            "name": self.name,
+            "transform": self.transform.copy(),
+            "components": components_data
+        }
+
+    def load_save_data(self, data: dict):
+        """从存档数据加载游戏对象状态"""
+        if "transform" in data:
+            self.transform.update(data["transform"])
+        
+        if "components" in data:
+            for comp_save_info in data["components"]:
+                comp_name = comp_save_info["name"]
+                comp_instance = self.get_component(comp_name)
+                if comp_instance and "properties" in comp_save_info:
+                    try:
+                        comp_instance.load_save_data(comp_save_info["properties"])
+                    except Exception as e:
+                        log.log(2, f"Error loading component [{comp_name}]: {e}")
+                
+                # 恢复组件激活状态
+                if comp_instance and "active" in comp_save_info:
+                    self.set_component_active(comp_name, comp_save_info["active"])

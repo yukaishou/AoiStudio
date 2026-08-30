@@ -11,7 +11,13 @@ class SpriteRenderer(ComponentBase):
         self.image_center = bool(properties.get("image_center", True))
 
         self.original_img = None
-        self.image_wrapper: Image | None = None
+        self.image_wrapper = Image(
+            self.engine.resource_manager.load_image(self.image_path),
+            pos=[0, 0],
+            scale=[1, 1],
+            size_mode=self.size_mode,
+            image_center=True,
+        )
 
     def start(self):
         """GameObject 创建后执行一次"""

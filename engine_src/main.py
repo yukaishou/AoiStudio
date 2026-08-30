@@ -15,8 +15,7 @@ import traceback
 import platform
 
 
-
-if __name__ == "__main__":
+def launch_game():  # 这里是游戏启动的入口函数,负责初始化游戏环境、启动游戏、处理异常并安全退出。
     game = None
     if os.name == 'nt':  # Windows DPI感知
         from ctypes import windll
@@ -61,17 +60,17 @@ if __name__ == "__main__":
             pass
 
         crash_text = f"""AoiStudio Fatal Crash Report
-========================================
-Crash Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
-OS: {platform.system()} {platform.release()}
-Python Version: {platform.python_version()}
-Pygame Version: {pygame.__version__}
-Engine Version: {json.load(open("config/game.json", "r", encoding="utf-8"))["engine_version"]}
-========================================
+    ========================================
+    Crash Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+    OS: {platform.system()} {platform.release()}
+    Python Version: {platform.python_version()}
+    Pygame Version: {pygame.__version__}
+    Engine Version: {json.load(open("config/game.json", "r", encoding="utf-8"))["engine_version"]}
+    ========================================
 
-Exception Traceback:
-{traceback.format_exc()}
-"""
+    Exception Traceback:
+    {traceback.format_exc()}
+    """
         # 注释掉messagebox，避免双重弹窗干扰；也可以保留，按需选择
         # messagebox.showerror("AoiStudio Error", str(e) + "\n Click OK to exit")
         AoiStudioCrasher.main(crash_text)
@@ -84,4 +83,7 @@ Exception Traceback:
             pass
     if os.path.exists("plugins_runtime"):
         shutil.rmtree("plugins_runtime")
+
+if __name__ == "__main__":
+    launch_game()
 

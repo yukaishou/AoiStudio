@@ -23,6 +23,7 @@ from engine_src.engine.debug import debugger_tcp_serevr
 from engine_src.engine.core.event import event_bus
 from engine_src.engine.g_o import g_o_manager
 from engine_src.engine.core import input
+from engine_src.engine.core.screen_transition import ScreenTransition
 
 
 
@@ -58,6 +59,13 @@ class Engine:
         self.is_full_screen = False
         self.is_looking_backtext = False
         self.save_game_ui_selected_solt = 0
+        
+        # 黑屏转场相关
+        self.transition_active = False
+        self.transition_start_time = 0
+        self.transition_duration = 0.5
+        self.transition_alpha = 0
+        self.transition_target_callback = None
 
         # 初始化模块
         self.dpi = dpi_tool.DPITool(self.game_size, pygame.display.list_modes()[0])
@@ -70,6 +78,9 @@ class Engine:
         self.event = event_bus.EventBus()
         self.g_o_manager = g_o_manager.GOManager(self)
         self.input = input.InputManager(self.event)
+        
+        # 屏幕转场管理器
+        self.screen_transition = ScreenTransition(self)
 
         # 初始化 UI
         self._create_global_ui_root_game_object()
@@ -106,6 +117,23 @@ class Engine:
 
         # 插件系统初始化
         self.plugin_manager = plugin_manager.PluginManager(self)
+        
+        # 自动初始化 CGViewer
+        self._init_cg_viewer()
+
+    def _init_cg_viewer(self):
+        """初始化全屏 CG 查看器"""
+        from engine_src.engine.ugc_ui.cg_viewer import CGViewer
+        
+        cg_viewer = CGViewer(
+            x=self.game_size[0] // 2,
+            y=self.game_size[1] // 2,
+            width=self.game_size[0],
+            height=self.game_size[1],
+            anchor="center",
+            engine=self
+        )
+        self.ugc_ui_manager.add_cg_viewer(cg_viewer)
 
     def run(self):
         self.fps_font = pygame.font.Font("fonts/default.ttf", 24)
@@ -188,18 +216,27 @@ class Engine:
             self.scene.draw(self.screen)
             self.g_o_manager.render(self.screen)
             self.cfg_decoder.update_wait(pygame.time.get_ticks())
+            
+            # 绘制屏幕转场效果
+            self.screen_transition.draw(self.screen)
 
             if not self.is_looking_backtext:
                 self.dialog_table.update(delta_time)
                 self.dialog_choice.update()
-
             self.ugc_ui_manager.draw(self.screen)
+            # 调整绘制顺序：先画对话框，最后画 UGC UI (包含 CG)
             if self.in_dialog_game:
                 self.dialog_table.render()
                 self.dialog_choice.render()
                 self.dialog_backlog.draw(self.screen)
+            
+
 
             self.plugin_manager.update()
+            
+            # 更新屏幕转场
+            self.screen_transition.update(delta_time)
+            
             self.event.update()
 
             # FPS文字黄色
@@ -222,30 +259,38 @@ class Engine:
         pygame.quit()
 
     def start_dialog_game(self, is_go_from_save_game=False, save_path=""):
-        self.event.emit("dialog_start_game", {"is_go_from_save_game": is_go_from_save_game, "save_path": save_path})
-        if not is_go_from_save_game:
-            try:
-                self.main_menu_bgm.stop()
-            except Exception as e:
-                log.log(2, f"[ENGINE]停止主菜单BGM失败 {e}")
-            self.in_dialog_game = True
-            self.ugc_ui_manager.clear_ui()
-            with open("config/dialog.json", "r", encoding="utf-8") as f:
-                first_start_dialog_config = json.load(f)
+        """开始对话游戏，先播放黑屏转场"""
+        
+        # 定义转场完成后的回调
+        def on_transition_half_complete():
+            """转场完成后真正进入游戏"""
+            self.event.emit("dialog_start_game", {"is_go_from_save_game": is_go_from_save_game, "save_path": save_path})
+            if not is_go_from_save_game:
+                try:
+                    self.main_menu_bgm.stop()
+                except Exception as e:
+                    log.log(2, f"[ENGINE]停止主菜单BGM失败 {e}")
+                self.in_dialog_game = True
+                self.ugc_ui_manager.clear_ui()
+                with open("config/dialog.json", "r", encoding="utf-8") as f:
+                    first_start_dialog_config = json.load(f)
 
-            if first_start_dialog_config["startFrom"].startswith("file:"):
-                start_from_path = first_start_dialog_config["startFrom"][5:]
-                self.dialog.load_dialogue(start_from_path)
-            elif first_start_dialog_config["startFrom"].startswith("id:"):
-                start_from_path = self.id_index_map[first_start_dialog_config["startFrom"][3:]]
-                self.dialog.load_dialogue(start_from_path)
+                if first_start_dialog_config["startFrom"].startswith("file:"):
+                    start_from_path = first_start_dialog_config["startFrom"][5:]
+                    self.dialog.load_dialogue(start_from_path)
+                elif first_start_dialog_config["startFrom"].startswith("id:"):
+                    start_from_path = self.id_index_map[first_start_dialog_config["startFrom"][3:]]
+                    self.dialog.load_dialogue(start_from_path)
 
-            if first_start_dialog_config["startBG"].startswith("file:"):
-                start_bg = first_start_dialog_config["startBG"][5:]
-                self.scene.add_background(start_bg)
-            self.dialog.start_dialogue()
-        else:
-            self.save_game_system.load_game(save_path)
+                if first_start_dialog_config["startBG"].startswith("file:"):
+                    start_bg = first_start_dialog_config["startBG"][5:]
+                    self.scene.add_background(start_bg)
+                self.dialog.start_dialogue()
+            else:
+                self.save_game_system.load_game(save_path)
+        
+        # 启动黑屏转场，设置回调
+        self.screen_transition.start_transition("black_fade", 1, half_callback=on_transition_half_complete)
 
     def fullscreen(self):
         # 修复：切换后同步状态变量
@@ -280,8 +325,8 @@ class Engine:
     def set_mouse_visible(self, visible):
         pygame.mouse.set_visible(visible)
 
-
     def test_g_o(self):
+
         if self.g_o_manager is None:
             return
         obj = self.g_o_manager.create_game_object(
@@ -298,3 +343,45 @@ class Engine:
 
     def delete_test_go(self, data=None):
         self.g_o_manager.remove_game_object("test_go")
+    
+    def test_cg_viewer(self):
+        """测试CG查看器功能"""
+        from engine_src.engine.ugc_ui.cg_viewer import CGViewer, CGTransition
+        
+        # 创建CG查看器
+        cg_viewer = CGViewer(
+            x=self.game_size[0] // 2,
+            y=self.game_size[1] // 2,
+            width=self.game_size[0] - 100,
+            height=self.game_size[1] - 200,
+            anchor="center",
+            engine=self
+        )
+        
+        # 设置CG列表
+        cg_viewer.set_cg_list([
+            {
+                'image_path': 'backgrounds/bg1.png',
+                'title': '场景一',
+                'description': '这是第一个CG场景的描述'
+            },
+            {
+                'image_path': 'backgrounds/bg2.png',
+                'title': '场景二',
+                'description': '这是第二个CG场景的描述'
+            }
+        ])
+        
+        # 显示第一张CG
+        cg_viewer.show_cg(cg_index=0)
+        
+        # 添加到UI管理器
+        self.ugc_ui_manager.add_cg_viewer(cg_viewer)
+        
+        # 创建简单的UI根节点来包含CG查看器
+        from engine_src.engine.ugc_ui.ui_element import UIElement
+        root = UIElement(0, 0, self.game_size[0], self.game_size[1], engine=self)
+        root.add_child(cg_viewer)
+        self.ugc_ui_manager.set_root(root)
+        
+        log.log(0, "[ENGINE] CG查看器测试已启动")

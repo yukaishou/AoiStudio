@@ -1,6 +1,7 @@
 import json
 from .ui_components import UIButton, UIText, UIImage, UIRect
 from .ui_element import UIElement
+from .cg_viewer import CGViewer
 
 class UILoader:
     def __init__(self, script_instance,engine):
@@ -93,6 +94,15 @@ class UILoader:
                     engine = self.engine,
                     border_radius=props.get("border_radius", 0),
                     anchor = props.get("anchor","topleft")
+                )
+            elif element_type == "CGViewer":
+                return CGViewer(
+                    x=props["x"],
+                    y=props["y"],
+                    width=props["width"],
+                    height=props["height"],
+                    anchor=props.get("anchor", "center"),
+                    engine=self.engine
                 )
             else:
                 print(f"未知的UI元素类型: {element_type}")

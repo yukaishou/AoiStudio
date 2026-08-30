@@ -336,12 +336,19 @@ class FileManagerPage(QWidget):
         self.tree_view.setRootIndex(self.fs_model.index(root_path))
         self.tree_view.setContextMenuPolicy(Qt.CustomContextMenu)
         self.tree_view.customContextMenuRequested.connect(self.tree_right_menu)
+        # 修复问题 2：隐藏表头，防止"Name/Type"列名遮挡文件名
+        self.tree_view.setHeaderHidden(True)
+        self.tree_view.setColumnWidth(0, 19000)  # 设置合适的列宽
 
         self.list_view = QListView()
         self.list_view.setModel(self.fs_model)
         self.list_view.setRootIndex(self.fs_model.index(root_path))
         self.list_view.setContextMenuPolicy(Qt.CustomContextMenu)
         self.list_view.customContextMenuRequested.connect(self.list_right_menu)
+        # 修复问题 3：确保右侧文件列表可以点击互动
+        self.list_view.clicked.connect(self.on_list_clicked)  # 添加 clicked 信号
+        self.list_view.doubleClicked.connect(self.on_list_double_clicked)  # 添加双击信号，用于打开文件夹
+        self.list_view.setEnabled(True)  # 确保控件是启用的
 
         splitter = QSplitter(Qt.Horizontal)
         splitter.addWidget(self.tree_view)
@@ -381,6 +388,22 @@ class FileManagerPage(QWidget):
         path = self.get_selected_path(self.list_view)
         if path and os.path.isfile(path):
             self.main_win.open_preview_tab(path)
+    
+    def on_list_clicked(self, index):
+        """修复问题 3：处理列表点击事件"""
+        path = self.fs_model.filePath(index)
+        if path and os.path.isfile(path):
+            self.main_win.open_preview_tab(path)
+    
+    def on_list_double_clicked(self, index):
+        """双击文件夹时进入该文件夹"""
+        path = self.fs_model.filePath(index)
+        if path and os.path.isdir(path):
+            # 进入子文件夹
+            self.list_view.setRootIndex(index)
+            # 同步左侧树选中状态
+            self.tree_view.setCurrentIndex(index)
+            self.path_label.setText(path)
 
     def tree_right_menu(self, pos: QPoint):
         index = self.tree_view.indexAt(pos)
@@ -638,6 +661,15 @@ class MainEditorWindow(QMainWindow):
         file_menu.addAction("退出", self.close)
         file_menu.addAction("构建剧本索引", self.build_id_file)
         file_menu.addAction("编辑角色", self.edit_character)
+        
+        # UI 编辑器入口
+        try:
+            from editor import editor_ui_editor
+            ui_editor_act = QAction("UI 编辑器", self)
+            ui_editor_act.triggered.connect(self.open_ui_editor)
+            file_menu.addAction(ui_editor_act)
+        except ImportError:
+            pass  # UI 编辑器不存在时跳过
 
         view_menu = menubar.addMenu("项目")
         open_fm_act = QAction("打开项目", self)
@@ -989,6 +1021,16 @@ class MainEditorWindow(QMainWindow):
         except Exception as e:
             traceback.print_exc()
             QMessageBox.warning(self, "错误", f"打开角色编辑器失败：{str(e)}")
+    
+    def open_ui_editor(self):
+        """打开 UI 编辑器"""
+        try:
+            from editor import editor_ui_editor
+            ui_editor_win = editor_ui_editor.UIEditorWindow(self)
+            ui_editor_win.show()
+        except Exception as e:
+            traceback.print_exc()
+            QMessageBox.warning(self, "错误", f"打开 UI 编辑器失败：{str(e)}")
 
     def build_id_file(self):
         if not self.is_opening_project:

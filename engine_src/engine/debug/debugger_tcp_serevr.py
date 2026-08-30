@@ -72,6 +72,7 @@ class DebuggerAPI:
     def __init__(self, state: DebugRuntimeState, server_ref):
         self.state = state
         self.server = server_ref
+        self.engine = state.engine  # 从 state 中获取 engine 引用
 
     def set_background(self, bg_path: str):
         self.state.now_background = bg_path
@@ -139,6 +140,50 @@ class DebuggerAPI:
         # 删掉错误的 self.state.change()，读状态不需要写回引擎
         return {"status": "ok", "data": self.state.get_runtime_dict()}
 
+    def get_hierarchy(self):
+        """获取 GameObject 层级结构"""
+        objects = []
+        for go in self.engine.g_o_manager.game_objects:
+            obj_info = {
+                "name": go.name,
+                "active": go.active,
+                "components": [c["name"] for c in go.components]
+            }
+            objects.append(obj_info)
+        return {"status": "ok", "objects": objects}
+
+    def get_component_detail(self, go_name: str, comp_name: str):
+        """获取指定对象的组件详情"""
+        go = self.engine.g_o_manager.get_game_object(go_name)
+        if not go:
+            return {"status": "error", "msg": f"GameObject '{go_name}' not found"}
+        
+        comp_data = go.get_component(comp_name)
+        
+        # 兼容处理：如果返回的是字典，按原逻辑；如果直接是对象，则直接使用
+        if isinstance(comp_data, dict):
+            comp_instance = comp_data.get("object")
+            is_active = comp_data.get("active", True)
+        else:
+            comp_instance = comp_data
+            # 尝试从 GameObject 的 components 列表中查找激活状态
+            is_active = True
+            for c in go.components:
+                if c["name"] == comp_name:
+                    is_active = c["active"]
+                    break
+
+        if not comp_instance:
+            return {"status": "error", "msg": f"Component '{comp_name}' not found on '{go_name}'"}
+        
+        detail = {
+            "name": comp_name,
+            "active": is_active,
+            "properties": comp_instance.get_save_data(),
+            "type": type(comp_instance).__name__
+        }
+        return {"status": "ok", "detail": detail}
+
     def reset_all(self):
         self.state.reset()
         self.state.change()
@@ -177,6 +222,17 @@ class DebuggerAPI:
                 return self.clear_history()
             elif cmd == "get_runtime":
                 return self.get_runtime_snapshot()
+            elif cmd == "inspector_get_hierarchy":
+                return self.get_hierarchy()
+            elif cmd == "inspector_get_component":
+                # 兼容两种传参方式：直接在根目录或在 params 中
+                go_name = cmd_obj.get("go_name") or params.get("go_name")
+                comp_name = cmd_obj.get("comp_name") or params.get("comp_name")
+                
+                if not go_name or not comp_name:
+                    return {"status": "error", "msg": "missing go_name or comp_name"}
+                    
+                return self.get_component_detail(go_name, comp_name)
             elif cmd == "reset_all":
                 return self.reset_all()
             else:
@@ -280,8 +336,13 @@ class TcpDebugServer:
                             j = json.loads(line.decode("utf-8"))
                             #print(f"[DEBUG_SERVER][{addr}] recv: {j}")
                             res = self.api.dispatch_command(j)
-                            out = (json.dumps(res, ensure_ascii=False)+"\n").encode("utf-8")
-                            conn.sendall(out)
+                            try:
+                                out = (json.dumps(res, ensure_ascii=False, default=str) + "\n").encode("utf-8")
+                                conn.sendall(out)
+                            except Exception as se:
+                                # 如果序列化失败，发送错误信息而不是直接断开
+                                err_msg = {"status": "error", "msg": f"serialization error: {str(se)}"}
+                                conn.sendall((json.dumps(err_msg) + "\n").encode("utf-8"))
                         except json.JSONDecodeError:
                             err = json.dumps({"status":"error","msg":"json parse fail"})+"\n"
                             conn.sendall(err.encode())

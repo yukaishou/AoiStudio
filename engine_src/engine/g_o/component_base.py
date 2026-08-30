@@ -19,3 +19,11 @@ class ComponentBase:
 
     def draw(self, surface):
         pass
+
+    def get_save_data(self):
+        """获取组件的存档数据"""
+        return self.properties.copy()
+
+    def load_save_data(self, data: dict):
+        """从存档数据加载组件状态"""
+        self.properties.update(data)

@@ -14,9 +14,21 @@
         },
         {
             "doc_id": "dialog_editor_operation",
-    "display_name": "剧本编辑器使用手册",
-    "file_name": "editor_dialogue_operation.json",
-    "category": "编辑器文档"
-}
+            "display_name": "剧本编辑器使用手册",
+            "file_name": "editor_dialogue_operation.json",
+            "category": "编辑器文档"
+        },
+        {
+            "doc_id": "ui_editor_operation",
+            "display_name": "UI 编辑器使用手册",
+            "file_name": "ui_editor_operation.json",
+            "category": "编辑器文档"
+        },
+        {
+            "doc_id": "go_components_guide",
+            "display_name": "GO/Components 开发指南",
+            "file_name": "go_components.json",
+            "category": "高级开发"
+        }
     ]
 }

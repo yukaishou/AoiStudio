@@ -15,7 +15,7 @@ class BaseSound:
 
         self._lock = threading.Lock()
 
-        self.volume = 0.5
+        self.volume = 0.0
         self.target_volume = 0.5
         self.speed = 0.1
         self.is_fade_out = False

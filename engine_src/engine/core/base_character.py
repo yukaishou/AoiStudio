@@ -70,7 +70,7 @@ class BaseCharacter:
             image_center=True
         )
         # 应用DPI缩放
-        self._apply_dpi_scale()
+        #self._apply_dpi_scale()
 
     def update(self):
         now = time.perf_counter()
@@ -176,7 +176,7 @@ class BaseCharacter:
         logic_render_x = self.logic_position[0] + self._shake_offset[0]
         logic_render_y = self.logic_position[1] + self._shake_offset[1] + self._jump_offset_y
         if self.engine.is_full_screen:
-            real_render_pos = self.engine.dpi.to_real(logic_render_x, logic_render_y)
+            real_render_pos = (logic_render_x, logic_render_y)
         else:
             real_render_pos = (logic_render_x, logic_render_y)
         self.character_image.set_pos(real_render_pos)

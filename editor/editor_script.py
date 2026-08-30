@@ -1,14 +1,56 @@
 import re
 import os
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QTextEdit, QPushButton,
-                               QCompleter, QFileDialog, QMessageBox)
-from PySide6.QtCore import Qt, QStringListModel, QKeyCombination
+                               QCompleter, QFileDialog, QMessageBox, QPlainTextEdit,
+                               QLabel, QFrame, QSplitter)
+from PySide6.QtCore import Qt, QStringListModel, QKeyCombination, QRect, QPoint
+from PySide6.QtGui import (QSyntaxHighlighter, QTextCharFormat, QColor, QKeySequence,
+                           QTextCursor, QFontMetrics, QPainter, QTextDocument)
 
 
-# CFG指令补全模板（模块级常量，供编辑器和高亮器共享）
+# 中文命令关键字（与 commands.py 中 CHINESE_COMMAND_MAP 的 key 保持一致）
+CHINESE_CMD_KEYWORDS = [
+    "添加", "增加", "移动", "切换", "退出", "动画",
+    "好感", "好感度", "等待", "延迟", "移除", "删除",
+    "跳转", "运行", "执行", "如果", "条件", "设置", "赋值",
+    "转场", "画面切换",
+]
+
+# 中文控制关键字
+CHINESE_CONTROL_KEYWORDS = ["否则", "结束条件", "真", "假", "分支"]
+
+# 中文参数关键字（与 commands.py 中 CHINESE_PARAM_MAP 的 key 保持一致）
+CHINESE_PARAM_KEYWORDS = [
+    "角色", "立绘", "人物", "背景", "场景", "游戏对象", "对象",
+    "组件", "标志", "标记", "音乐", "背景音乐",
+    "淡入", "淡出", "缩放", "抖动", "震动", "跳跃",
+    "闪烁开始", "闪烁停止",
+    "增加好感", "减少好感", "设置好感",
+    "淡入淡出", "黑场",
+    "剧本文件", "剧本索引", "对话文件", "对话索引",
+]
+
+# 英文命令关键字
+ENGLISH_CMD_KEYWORDS = [
+    "add", "move", "switch", "animation", "remove", "affection",
+    "wait", "jump", "quit", "run", "if", "set", "transition",
+]
+
+# 英文控制关键字
+ENGLISH_CONTROL_KEYWORDS = ["else", "endif", "true", "false"]
+
+# 英文参数关键字
+ENGLISH_PARAM_KEYWORDS = [
+    "character", "background", "game_object", "component", "flag", "bgm",
+    "fade_to", "scale_to", "shake", "start_blink", "stop_blink",
+    "dialogue_file", "dialogue_index",
+]
+
+
+# CFG 指令补全模板（模块级常量，供编辑器和高亮器共享）
 CFG_SUGGEST = [
     "add game_object obj_name px py rot sx sy",
-    "add component obj_name ComponentName {{\"key\": \"value\"}}",
+    "add component obj_name ComponentName {\"key\": \"value\"}",
     "add character file:characters/sprite.png x y",
     "add background file:bg/bg01.png",
     "add flag flag_name",
@@ -30,10 +72,36 @@ CFG_SUGGEST = [
     "if have_flags:flag_name",
     "else",
     "endif",
-    "quit"
+    "quit",
+    "transition black_fade 0.5",
+    "transition fade 0.3",
+    # 中文补全
+    "添加 角色 file:characters/sprite.png x y",
+    "添加 背景 file:bg/bg01.png",
+    "添加 游戏对象 obj_name px py rot sx sy",
+    "添加 标志 flag_name",
+    "移除 角色 index",
+    "移除 标志 flag_name",
+    "移动 角色 idx tx ty ease dur",
+    "切换 背景 file:bg.png fade 0.5",
+    "切换 音乐 file:bgm/test.ogg 1.0",
+    "动画 角色 idx 淡入 alpha duration",
+    "动画 角色 idx 抖动 amp dur",
+    "动画 角色 idx 跳跃 height dur",
+    "好感 角色名 增加 value",
+    "好感 角色名 设置 value",
+    "好感 角色名 减少 value",
+    "等待 2.0",
+    "运行 file:path/to/script.cfg",
+    "跳转 剧本文件 file:dialogue/test.cfg",
+    "跳转 剧本索引 0",
+    "如果 have_flags:flag_name",
+    "否则",
+    "结束条件",
+    "退出",
+    "转场 黑场 0.5",
+    "转场 淡入淡出 0.3",
 ]
-from PySide6.QtGui import (QSyntaxHighlighter, QTextCharFormat, QColor, QKeySequence,
-                           QTextCursor)
 
 
 # ====================== 语法高亮 ======================
@@ -46,13 +114,43 @@ class CFGHighlighter(QSyntaxHighlighter):
         # 1.注释 优先级最高
         comment_format = QTextCharFormat()
         comment_format.setForeground(QColor("#6A9955"))
-        self.rules.append((re.compile(r"//.*$"), comment_format))
+        self.rules.append((re.compile(r"//.*$", re.MULTILINE), comment_format))
 
-        # 主命令关键字
+        # 主命令关键字（英文）
         cmd_format = QTextCharFormat()
         cmd_format.setForeground(QColor("#569cd6"))
-        cmd_words = r"\b(add|move|switch|animation|remove|affection|wait|jump|quit|run|if|else|endif|true|false)\b"
-        self.rules.append((re.compile(cmd_words), cmd_format))
+        cmd_pattern = r"\b(" + "|".join(re.escape(k) for k in ENGLISH_CMD_KEYWORDS) + r")\b"
+        self.rules.append((re.compile(cmd_pattern), cmd_format))
+
+        # 控制关键字（英文）
+        control_format = QTextCharFormat()
+        control_format.setForeground(QColor("#c586c0"))
+        control_pattern = r"\b(" + "|".join(re.escape(k) for k in ENGLISH_CONTROL_KEYWORDS) + r")\b"
+        self.rules.append((re.compile(control_pattern), control_format))
+
+        # 参数关键字（英文）
+        param_format = QTextCharFormat()
+        param_format.setForeground(QColor("#4EC9B0"))
+        param_pattern = r"\b(" + "|".join(re.escape(k) for k in ENGLISH_PARAM_KEYWORDS) + r")\b"
+        self.rules.append((re.compile(param_pattern), param_format))
+
+        # 主命令关键字（中文）- 蓝色
+        chinese_cmd_format = QTextCharFormat()
+        chinese_cmd_format.setForeground(QColor("#569cd6"))
+        chinese_cmd_pattern = "(?<!\w)(" + "|".join(re.escape(k) for k in CHINESE_CMD_KEYWORDS) + r")(?!\w)"
+        self.rules.append((re.compile(chinese_cmd_pattern), chinese_cmd_format))
+
+        # 控制关键字（中文）- 紫色
+        chinese_control_format = QTextCharFormat()
+        chinese_control_format.setForeground(QColor("#c586c0"))
+        chinese_control_pattern = "(?<!\w)(" + "|".join(re.escape(k) for k in CHINESE_CONTROL_KEYWORDS) + r")(?!\w)"
+        self.rules.append((re.compile(chinese_control_pattern), chinese_control_format))
+
+        # 参数关键字（中文）- 绿色
+        chinese_param_format = QTextCharFormat()
+        chinese_param_format.setForeground(QColor("#4EC9B0"))
+        chinese_param_pattern = "(?<!\w)(" + "|".join(re.escape(k) for k in CHINESE_PARAM_KEYWORDS) + r")(?!\w)"
+        self.rules.append((re.compile(chinese_param_pattern), chinese_param_format))
 
         # 文件路径 file:xxx
         path_format = QTextCharFormat()
@@ -153,17 +251,19 @@ class PureCFGTextEdit(QTextEdit):
             block = cursor.block()
             line_text = block.text().strip()
 
-            # 当前行以 if 或 else 开头 → 缩进
+            # 当前行以 if/如果/条件 或 else/否则 开头 → 缩进
             if line_text:
-                first_word = line_text.split()[0].lower()
-                if first_word in ("if", "else"):
+                first_word = line_text.split()[0]
+                indent_keywords = {"if", "else", "如果", "条件", "否则", "分支"}
+                if first_word in indent_keywords:
                     cursor.insertBlock()
                     current_indent = block.text()[:len(block.text()) - len(block.text().lstrip())]
                     cursor.insertText(current_indent + "    ")
                     event.accept()
                     return
-                # 当前行是 endif 或 else → 反缩进
-                if first_word in ("endif",):
+                # 当前行是 endif/结束条件 → 反缩进
+                dedent_keywords = {"endif", "结束条件"}
+                if first_word in dedent_keywords:
                     cursor.insertBlock()
                     current_indent = block.text()[:len(block.text()) - len(block.text().lstrip())]
                     # 去掉一级缩进
@@ -254,8 +354,8 @@ class CFGCommandEditor(QWidget):
         self.edit.setPlaceholderText(
             "CFG脚本编辑器\n"
             "语法：换行分隔语句，{}支持代码块，//注释\n"
-            "if/else/endif 支持条件分支，Enter自动缩进\n"
-            "Tab唤起指令补全"
+            "if/如果/else/否则/endif/结束条件 支持条件分支，Enter自动缩进\n"
+            "支持中英文双语指令，Tab唤起指令补全"
         )
         self.hlighter = CFGHighlighter(self.edit.document())
 

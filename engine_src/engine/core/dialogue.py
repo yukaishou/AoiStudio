@@ -2,7 +2,16 @@ import pygame
 import json
 import operator
 import re
+import os
+import sys
 from engine_src.engine.core import log
+
+# 添加 cfg_compiler 目录到路径，以便导入反编译器
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', '..', 'cfg_compiler'))
+try:
+    from cfg_decompiler import decompile_cfgc_to_cfg
+except ImportError:
+    decompile_cfgc_to_cfg = None
 
 
 def parse_and_eval(condition_str, context):
@@ -16,14 +25,22 @@ def parse_and_eval(condition_str, context):
         raise ValueError(f"条件表达式格式错误: {condition_str}")
 
     var, op_str, val_str = parts
-    # 尝试解析数值
-    try:
-        if "." in val_str:
-            val = float(val_str)
-        else:
-            val = int(val_str)
-    except ValueError:
-        raise ValueError(f"条件右侧不是有效数字: {val_str}")
+
+    # 左侧一定是上下文中的变量
+    if var not in context:
+        raise ValueError(f"条件变量不存在：{var}")
+
+    # 右侧支持数字 OR 另一个上下文变量
+    if val_str in context:
+        val = context[val_str]
+    else:
+        try:
+            if "." in val_str:
+                val = float(val_str)
+            else:
+                val = int(val_str)
+        except ValueError:
+            raise ValueError(f"条件右侧不是有效数字或变量: {val_str}")
 
     ops = {
         '>=': operator.ge, '<=': operator.le,
@@ -47,6 +64,9 @@ class Dialogue:
         self.flags = set()
         self.characters_affection = {}
         self._active_options = []
+        self._current_voice_sound = None  # 持有音频对象防止GC销毁
+        # 记录已执行过script的节点索引，避免重复执行
+        self.executed_script_indices = set()
 
         # 加载角色配置，增加异常捕获
         try:
@@ -64,10 +84,38 @@ class Dialogue:
         val = val.strip()
         return "None" if val in ("", "None") else val
 
+    def _load_cfg_script(self, script_path: str) -> str:
+        """加载 CFG 脚本，自动处理 .cfg_c 格式的转换"""
+        # 检查是否是 .cfg_c 格式
+        if script_path.endswith('.cfg_c'):
+            if decompile_cfgc_to_cfg is None:
+                log.log(2, f"反编译器未加载，无法处理 .cfg_c 文件: {script_path}")
+                return ""
+            
+            # 生成临时 .cfg 文件路径
+            temp_cfg_path = script_path[:-4] + ".cfg"  # 去掉 _c 后缀
+            
+            try:
+                # 执行反编译
+                decompile_cfgc_to_cfg(script_path, temp_cfg_path)
+                # 加载转换后的文件
+                cfg_text = self.engine.resource_manager.load_text_file(temp_cfg_path)
+                # 可选：清理临时文件
+                # os.remove(temp_cfg_path)
+                return cfg_text
+            except Exception as e:
+                log.log(2, f"反编译 .cfg_c 文件失败 {script_path}: {e}")
+                return ""
+        else:
+            # 普通 .cfg 文件，直接加载
+            return self.engine.resource_manager.load_text_file(script_path)
+
     def load_dialogue(self, file_path):
         self.engine.event.emit("dialogue_load", {"dialogue_file_path": file_path})
         self.this_dialogue_is_finished = False
         self.current_dialogue_index = 0
+        # 加载新对话时清空已执行script的记录
+        self.executed_script_indices.clear()
         try:
             self.dialogue = self.engine.resource_manager.load_json_file(file_path)
         except Exception as e:
@@ -87,7 +135,7 @@ class Dialogue:
 
         if opt_script != "None":
             if opt_script.startswith("file:"):
-                cfg_text = self.engine.resource_manager.load_text_file(opt_script[5:])
+                cfg_text = self._load_cfg_script(opt_script[5:])
                 self.engine.cfg_decoder.execute(cfg_text)
             elif opt_script.startswith("cmd:"):
                 self.engine.cfg_decoder.execute(opt_script[4:])
@@ -98,15 +146,19 @@ class Dialogue:
             self.load_dialogue(target_path)
             self.start_dialogue()
         elif path_raw.startswith("id:"):
-            target_index = str(path_raw[3:])
-            self.load_dialogue(self.engine.id_index_map[target_index])
+            target_id = path_raw[3:]
+            if target_id not in self.engine.id_index_map:
+                log.log(2, f"对话ID不存在: {target_id}")
+                return
+            target_path = self.engine.id_index_map[target_id]
+            self.load_dialogue(target_path)
             self.start_dialogue()
 
     def start_dialogue(self, not_choice=False):
         self.engine.event.emit("dialogue_start", {"dialogue_index": self.current_dialogue_index, "not_choice": not_choice})
         self.auto_mode = not not_choice
 
-        if self.dialogue is None or len(self.dialogue) == 0:
+        if len(self.dialogue.get("dialogs", [])) == 0:
             return
         # CFG等待时直接停止推进对话
         if self.engine.cfg_decoder.is_waiting:
@@ -128,6 +180,21 @@ class Dialogue:
         log.log(0, f"Now Dialogue index : {self.current_dialogue_index}")
         current_node = dialog_list[self.current_dialogue_index]
 
+        node_script = self._norm_empty(current_node.get("script", "None"))
+        # 先执行script，如果进入等待则不显示文本，避免重复
+        if node_script != "None" and self.current_dialogue_index not in self.executed_script_indices:
+            if node_script.startswith("file:"):
+                cfg_text = self._load_cfg_script(node_script[5:])
+                self.engine.cfg_decoder.execute(cfg_text)
+            elif node_script.startswith("cmd:"):
+                self.engine.cfg_decoder.execute(node_script[4:])
+            # 标记该节点的script已执行
+            self.executed_script_indices.add(self.current_dialogue_index)
+            # CFG执行后进入等待，直接返回，不显示文本
+            if self.engine.cfg_decoder.is_waiting:
+                return
+
+        # 只有在没有等待状态时才显示文本和记录历史
         if len(self.engine.scene.bgm) > 0:
             now_bgm = f"file:{self.engine.scene.bgm[-1].path}"
         else:
@@ -151,23 +218,14 @@ class Dialogue:
         self.engine.dialog_table.set_speaker(current_node.get("speaker", ""))
 
         voice_str = self._norm_empty(current_node.get("voice", "None"))
+        self._current_voice_sound = None
         if voice_str != "None":
             if voice_str.startswith("file:"):
                 voice_path = voice_str[5:]
                 voice = self.engine.resource_manager.load_sound(voice_path)
-                voice.set_volume(1.5)
+                voice.set_volume(min(1.5, 1.0))  # pygame volume范围0‑1
                 voice.play()
-
-        node_script = self._norm_empty(current_node.get("script", "None"))
-        if node_script != "None":
-            if node_script.startswith("file:"):
-                cfg_text = self.engine.resource_manager.load_text_file(node_script[5:])
-                self.engine.cfg_decoder.execute(cfg_text)
-            elif node_script.startswith("cmd:"):
-                self.engine.cfg_decoder.execute(node_script[4:])
-            # CFG执行后进入等待，直接返回，不再处理选项/索引+1
-            if self.engine.cfg_decoder.is_waiting:
-                return
+                self._current_voice_sound = voice
 
         option_list = current_node.get("options", [])
         if len(option_list) > 0:
@@ -206,8 +264,8 @@ class Dialogue:
             self.current_dialogue_index += 1
 
     def on_text_complete(self):
-        self.engine.event.emit("dialogue_text_complete", {"dialogue_index": self.current_dialogue_index})
         """文本结束回调"""
+        self.engine.event.emit("dialogue_text_complete", {"dialogue_index": self.current_dialogue_index})
         if self.is_choice_active:
             self.engine.dialog_choice.set_active(True)
 
@@ -255,7 +313,9 @@ class Dialogue:
             "characters_affection": self.characters_affection.copy(),
             "dialogue_file_path": self.dialogue_file_path,
             "current_dialogue_index": self.current_dialogue_index,
-            "this_dialogue_is_finished": self.this_dialogue_is_finished
+            "this_dialogue_is_finished": self.this_dialogue_is_finished,
+            "history_text": self.history_text.copy(),
+            "executed_script_indices": list(self.executed_script_indices)
         }
 
     def load_save_data(self, save_data):
@@ -265,5 +325,16 @@ class Dialogue:
         self.dialogue_file_path = save_data.get("dialogue_file_path")
         self.current_dialogue_index = save_data.get("current_dialogue_index", 0)
         self.this_dialogue_is_finished = save_data.get("this_dialogue_is_finished", False)
+        self.history_text = save_data.get("history_text", [])
+        # 恢复已执行script的节点记录
+        self.executed_script_indices = set(save_data.get("executed_script_indices", []))
+        self.engine.dialog_backlog.history = self.history_text.copy()
+
         if self.dialogue_file_path:
             self.load_dialogue(self.dialogue_file_path)
+            # 读档后刷新UI画面状态
+            dialog_list = self.dialogue.get("dialogs", [])
+            if 0 <= self.current_dialogue_index < len(dialog_list):
+                node = dialog_list[self.current_dialogue_index]
+                self.engine.dialog_table.load_text(node.get("text", ""))
+                self.engine.dialog_table.set_speaker(node.get("speaker", ""))

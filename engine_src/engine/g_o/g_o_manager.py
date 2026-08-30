@@ -1,3 +1,5 @@
+import os
+
 from engine_src.engine.core import log
 from engine_src.engine.g_o.game_object_base import GameObjectBase
 from engine_src.engine.g_o.components import sprite_renderer, audio_player, collsion_box
@@ -23,13 +25,17 @@ class GOManager:
         return new_game_object
 
     def create_component(self, go, comp_name: str, props: dict):
+        is_zi_ding_yi = False
         cls = self.get_component_by_name(comp_name)
         if cls is None:
             cls = self.engine.resource_manager.load_python_script(comp_name).ScriptBase
             if cls is None:
                 log.log(2,f"组件不存在:{comp_name}")
                 return None
+            is_zi_ding_yi = True
         inst = cls(go, props, self.engine)
+        if is_zi_ding_yi:
+            inst.name = os.path.basename(comp_name)[:-3]
         go.add_component(inst)
         return inst
 

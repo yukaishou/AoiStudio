@@ -3,8 +3,9 @@ import json
 
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, QPushButton, QLineEdit, QHBoxLayout,
-                             QSplitter, QTextEdit, QTabWidget, QLabel, QSpinBox, QListWidget, QListWidgetItem,
-                             QGroupBox, QFormLayout, QMessageBox)
+                               QSplitter, QTextEdit, QTabWidget, QLabel, QSpinBox, QListWidget, QListWidgetItem,
+                               QGroupBox, QFormLayout, QMessageBox, QTreeWidget, QTreeWidgetItem, QScrollArea,
+                               QCheckBox, QFrame)
 from PySide6.QtCore import Qt, QObject, Signal, QThread, QTimer, QMutex, QMutexLocker
 from PySide6.QtNetwork import QTcpSocket, QAbstractSocket
 
@@ -217,6 +218,10 @@ class DebuggerGuiWindow(QMainWindow):
         self._create_tab_flags()
         self._create_tab_dialogue_history()
         self._create_tab_runtime_preview()
+        self._create_tab_inspector()
+
+        # 连接标签页切换信号，用于触发 Inspector 数据请求
+        self.tab_widget.currentChanged.connect(self._on_inspector_tab_changed)
 
         log_group = QGroupBox("日志 / TCP输出")
         log_layout = QVBoxLayout(log_group)
@@ -303,6 +308,131 @@ class DebuggerGuiWindow(QMainWindow):
         self.text_runtime_preview.setReadOnly(True)
         lay.addWidget(self.text_runtime_preview)
 
+    def _create_tab_inspector(self):
+        """创建类似 Unity Inspector 的面板"""
+        inspector_widget = QWidget()
+        main_layout = QHBoxLayout(inspector_widget)
+        
+        # 左侧 Hierarchy (树状列表)
+        hierarchy_group = QGroupBox("Hierarchy")
+        hierarchy_layout = QVBoxLayout(hierarchy_group)
+        self.hierarchy_tree = QTreeWidget()
+        self.hierarchy_tree.setHeaderLabels(["Name", "Active"])
+        self.hierarchy_tree.itemClicked.connect(self._on_hierarchy_item_clicked)
+        hierarchy_layout.addWidget(self.hierarchy_tree)
+        main_layout.addWidget(hierarchy_group, 1)
+        
+        # 右侧 Inspector (属性详情 - 使用 ScrollArea + FormLayout)
+        inspector_group = QGroupBox("Inspector")
+        inspector_main_layout = QVBoxLayout(inspector_group)
+        
+        # 滚动区域，防止属性过多时溢出
+        scroll_area = QScrollArea()
+        scroll_area.setWidgetResizable(True)
+        self.inspector_container = QWidget()
+        self.inspector_layout = QFormLayout(self.inspector_container)
+        scroll_area.setWidget(self.inspector_container)
+        
+        inspector_main_layout.addWidget(scroll_area)
+        main_layout.addWidget(inspector_group, 2)
+        
+        self.tab_widget.addTab(inspector_widget, "Inspector")
+
+    def _clear_inspector_layout(self):
+        """清空 Inspector 布局中的旧控件"""
+        while self.inspector_layout.count():
+            item = self.inspector_layout.takeAt(0)
+            if item.widget():
+                item.widget().deleteLater()
+
+    def _on_inspector_tab_changed(self, index):
+        """当标签页切换时触发"""
+        if self.tab_widget.tabText(index) == "Inspector":
+            self.send_command({"cmd": "inspector_get_hierarchy"})
+
+    def _on_hierarchy_item_clicked(self, item, column):
+        """点击 Hierarchy 中的对象时，获取其组件详情"""
+        # 如果点击的是组件（有父节点）
+        if item.parent() is not None:
+            go_name = item.parent().text(0)
+            comp_name = item.text(0)
+            self.send_command({"cmd": "inspector_get_component", "go_name": go_name, "comp_name": comp_name})
+        # 如果点击的是 GameObject（根节点）
+        else:
+            go_name = item.text(0)
+            # 获取第一个组件名
+            if item.childCount() > 0:
+                comp_name = item.child(0).text(0)
+                self.send_command({"cmd": "inspector_get_component", "go_name": go_name, "comp_name": comp_name})
+            else:
+                # 如果没有组件，清空 Inspector 并提示
+                self._clear_inspector_layout()
+                label = QLabel(f"GameObject: {go_name}\n(No components)")
+                self.inspector_layout.addRow(label)
+
+    def refresh_inspector_hierarchy(self, data):
+        """刷新 Hierarchy 列表"""
+        self.hierarchy_tree.clear()
+        objects = data.get("objects", [])
+        for obj_info in objects:
+            root_item = QTreeWidgetItem(self.hierarchy_tree)
+            root_item.setText(0, obj_info["name"])
+            root_item.setText(1, str(obj_info["active"]))
+            
+            for comp_name in obj_info.get("components", []):
+                child_item = QTreeWidgetItem(root_item)
+                child_item.setText(0, comp_name)
+        
+        self.hierarchy_tree.expandAll()
+
+    def show_component_detail(self, data):
+        """在 Inspector 中以 Unity 风格显示组件详情"""
+        self._clear_inspector_layout()
+        detail = data.get("detail", {})
+        if not detail:
+            return
+        
+        # 标题信息
+        title_label = QLabel(f"<b>{detail.get('name')}</b> ({detail.get('type')})")
+        title_label.setStyleSheet("font-size: 14px; padding: 5px; color: #333;")
+        self.inspector_layout.addRow(title_label)
+        
+        # 激活状态开关
+        active_check = QCheckBox("Enabled")
+        active_check.setChecked(detail.get("active", True))
+        active_check.setEnabled(False) # 暂时只读
+        self.inspector_layout.addRow("", active_check)
+        
+        # 分割线
+        line = QFrame()
+        line.setFrameShape(QFrame.HLine)
+        line.setFrameShadow(QFrame.Sunken)
+        self.inspector_layout.addRow(line)
+        
+        # 属性列表
+        properties = detail.get('properties', {})
+        for key, value in properties.items():
+            label = QLabel(str(key))
+            label.setStyleSheet("font-weight: bold; color: #555;")
+            
+            # 根据值类型选择不同的输入控件
+            if isinstance(value, bool):
+                widget = QCheckBox()
+                widget.setChecked(value)
+                widget.setEnabled(False)
+            elif isinstance(value, (int, float)):
+                widget = QLineEdit(str(value))
+            elif isinstance(value, list):
+                widget = QLineEdit(json.dumps(value, ensure_ascii=False))
+            else:
+                widget = QLineEdit(str(value))
+                
+            widget.setEnabled(False) # 目前设为只读，未来可改为可编辑并同步回服务器
+            self.inspector_layout.addRow(label, widget)
+
+    def send_command(self, cmd_dict):
+        self.tcp_client.send_command(cmd_dict)
+
     def _send_cmd(self, cmd_obj: dict):
         self.tcp_client.send_command(cmd_obj)
 
@@ -310,6 +440,16 @@ class DebuggerGuiWindow(QMainWindow):
         if resp.get("reply") == "pong":
             return
         self._append_log(f"[RECV] {resp}")
+
+        # 处理 Inspector Hierarchy 响应
+        if resp.get("status") == "ok" and "objects" in resp:
+            self.refresh_inspector_hierarchy(resp)
+            return
+
+        # 处理 Inspector Component Detail 响应
+        if resp.get("status") == "ok" and "detail" in resp:
+            self.show_component_detail(resp)
+            return
 
         if resp.get("status") == "ok" and "data" in resp:
             new_snap = resp["data"]

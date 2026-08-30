@@ -37,7 +37,7 @@ class SaveGame:
             }
             characters.append(tmp_chr)
         save_game_data = {
-            "format_version": 1,
+            "format_version": 2,
             "time": f"{date.today().year}/{date.today().month}/{date.today().day}",
             "dialogue": {
                 "file_path": f"file:{dialogue_file_path}",
@@ -52,9 +52,17 @@ class SaveGame:
                 "characters": characters,
                 "bgm": f"{bgm}"
             },
-            "history_text": history_texts
-
+            "history_text": history_texts,
+            "game_objects": []
         }
+
+        # 保存 GameObject/Component 系统状态
+        for go in self.engine.g_o_manager.game_objects:
+            try:
+                save_game_data["game_objects"].append(go.get_save_data())
+            except Exception as e:
+                log.log(2, f"[SAVE] Error saving game object [{go.name}]: {e}")
+
         if not os.path.exists("saves"):
             os.mkdir("saves")
         with open(path, "w", encoding="utf-8") as f:
@@ -86,6 +94,20 @@ class SaveGame:
         self.engine.dialog.history_text = save_game_data["history_text"]
         if not save_game_data["scene"]["bgm"] == "None":
             self.engine.scene.switch_bgm(save_game_data["scene"]["bgm"][5:], 0.5)
+        # 加载 GameObject/Component 系统状态
+        if "game_objects" in save_game_data:
+            for go_data in save_game_data["game_objects"]:
+                go_name = go_data.get("name")
+                if go_name:
+                    go = self.engine.g_o_manager.get_game_object(go_name)
+                    if go:
+                        try:
+                            go.load_save_data(go_data)
+                        except Exception as e:
+                            log.log(2, f"[LOAD] Error loading game object [{go_name}]: {e}")
+                    else:
+                        log.log(1, f"[LOAD] Game object [{go_name}] not found, skipping restore.")
+
         self.engine.dialog.start_dialogue(True)
         # 限制角色数量,为了防止角色被加载的cfg脚本而加载其他角色
         self.engine.scene.characters = self.engine.scene.characters[:len(save_game_data["scene"]["characters"])]

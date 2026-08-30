@@ -203,16 +203,16 @@ class DialogJsonEditor(QWidget):
             elif ret == QMessageBox.Discard:
                 self._form_modified = False
 
-        items = self.tree.selectedItems()
+        # 使用 currentItem() 而不是 selectedItems()，因为 currentItemChanged 信号更可靠
+        item = self.tree.currentItem()
         self.clear_all_form()
         self.selected_tree_item = None
         self.selected_dialog_index = None
         self.selected_option_index = None
 
-        if not items:
+        if item is None:
             self._update_button_state()
             return
-        item = items[0]
         self.selected_tree_item = item
         ud = item.data(0, Qt.UserRole)
         if ud is None:
