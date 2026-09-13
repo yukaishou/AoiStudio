@@ -13,8 +13,8 @@ class DPITool:
 
         # 【工具函数】逻辑坐标 -> 物理坐标（位置）
     def to_real(self,x, y):
-            return int(x * self.SCALE + self.OFFSET_X), int(y * self.SCALE + self.OFFSET_Y)
+            return int(x), int(y)
 
         # 【工具函数】逻辑尺寸 -> 物理尺寸（大小）
     def to_real_size(self,size):
-            return [float(size[0] * self.SCALE),float(size[1] * self.SCALE)]
+            return [float(size[0]),float(size[1])]

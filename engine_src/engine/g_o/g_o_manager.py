@@ -46,12 +46,11 @@ class GOManager:
         return None
 
     def remove_game_object(self, name):
-        self.engine.event.emit("gamme_object_removed",{"name":name})
+        self.engine.event.emit("game_object_removed",{"name":name})
         for game_object in self.game_objects:
             if game_object.name == name:
                 self.game_objects.remove(game_object)
                 return True
-            return False
         return False
 
     def update(self, dt: float):

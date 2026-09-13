@@ -9,10 +9,24 @@ CFG 解析器 - 改进的脚本解析功能
 """
 
 import re
+import base64
 from typing import List, Optional, Tuple
 from engine_src.engine.core import log
 from .error_handler import CFGErrorHandler
 from .variable_manager import VariableManager
+
+
+def decode_value(value):
+    """如果值以b64:开头，则将其从base64解码"""
+    if value.startswith("b64:"):
+        encoded = value[4:]
+        try:
+            decoded = base64.b64decode(encoded).decode('utf-8')
+            return decoded
+        except Exception:
+            log.log(3, f"[CFG WARNING] Failed to decode base64 value: {value}")
+            return value
+    return value
 
 
 class CFGParser:
@@ -166,111 +180,111 @@ class CFGParser:
         args = []
         
         if command == 'add character':
-            path = params.get('PATH', '')
-            x = params.get('X', '0')
-            y = params.get('Y', '0')
+            path = decode_value(params.get('PATH', ''))
+            x = decode_value(params.get('X', '0'))
+            y = decode_value(params.get('Y', '0'))
             args = [path, x, y]
         
         elif command == 'add background':
-            path = params.get('PATH', '')
-            x = params.get('X', '0')
-            y = params.get('Y', '0')
+            path = decode_value(params.get('PATH', ''))
+            x = decode_value(params.get('X', '0'))
+            y = decode_value(params.get('Y', '0'))
             args = [path, x, y]
         
         elif command == 'add game_object':
-            name = params.get('NAME', '')
+            name = decode_value(params.get('NAME', ''))
             args = [name]
         
         elif command == 'add component':
-            go_name = params.get('GO_NAME', '')
-            comp_type = params.get('COMP_TYPE', '')
+            go_name = decode_value(params.get('GO_NAME', ''))
+            comp_type = decode_value(params.get('COMP_TYPE', ''))
             args = [go_name, comp_type]
         
         elif command == 'add flag':
-            flag_name = params.get('FLAG_NAME', '')
+            flag_name = decode_value(params.get('FLAG_NAME', ''))
             args = [flag_name]
         
         elif command == 'switch background':
-            path = params.get('PATH', '')
-            transition = params.get('TRANSITION', 'fade')
-            duration = params.get('DURATION', '0.5')
+            path = decode_value(params.get('PATH', ''))
+            transition = decode_value(params.get('TRANSITION', 'fade'))
+            duration = decode_value(params.get('DURATION', '0.5'))
             args = [path, transition, duration]
         
         elif command == 'switch bgm':
-            path = params.get('PATH', '')
-            fade_duration = params.get('FADE_DURATION', '1.0')
+            path = decode_value(params.get('PATH', ''))
+            fade_duration = decode_value(params.get('FADE_DURATION', '1.0'))
             args = [path, fade_duration]
         
         elif command == 'move character':
-            index = params.get('INDEX', '0')
-            x = params.get('X', '0')
-            y = params.get('Y', '0')
-            easing = params.get('EASING', 'linear')
-            duration = params.get('DURATION', '0.5')
+            index = decode_value(params.get('INDEX', '0'))
+            x = decode_value(params.get('X', '0'))
+            y = decode_value(params.get('Y', '0'))
+            easing = decode_value(params.get('EASING', 'linear'))
+            duration = decode_value(params.get('DURATION', '0.5'))
             args = [index, x, y, easing, duration]
         
         elif command == 'animation character':
-            index = params.get('INDEX', '0')
-            anim_type = params.get('TYPE', 'shake')
-            param1 = params.get('PARAM1', '8.0')
-            param2 = params.get('PARAM2', '1.0')
-            duration = params.get('DURATION', '0.5')
+            index = decode_value(params.get('INDEX', '0'))
+            anim_type = decode_value(params.get('TYPE', 'shake'))
+            param1 = decode_value(params.get('PARAM1', '8.0'))
+            param2 = decode_value(params.get('PARAM2', '1.0'))
+            duration = decode_value(params.get('DURATION', '0.5'))
             args = [index, anim_type, param1, param2, duration]
         
         elif command == 'wait':
-            time = params.get('TIME', '1.0')
+            time = decode_value(params.get('TIME', '1.0'))
             args = [time]
         
         elif command == 'affection':
-            char_name = params.get('CHAR_NAME', '')
-            op = params.get('OP', 'add')
-            value = params.get('VALUE', '0')
+            char_name = decode_value(params.get('CHAR_NAME', ''))
+            op = decode_value(params.get('OP', 'add'))
+            value = decode_value(params.get('VALUE', '0'))
             args = [char_name, op, value]
         
         elif command == 'remove character':
-            index = params.get('INDEX', '0')
+            index = decode_value(params.get('INDEX', '0'))
             args = [index]
         
         elif command == 'remove background':
-            index = params.get('INDEX', '0')
+            index = decode_value(params.get('INDEX', '0'))
             args = [index]
         
         elif command == 'jump dialogue_file':
-            path = params.get('PATH', '')
+            path = decode_value(params.get('PATH', ''))
             args = [path]
         
         elif command == 'jump dialogue_index':
-            index = params.get('INDEX', '0')
+            index = decode_value(params.get('INDEX', '0'))
             args = [index]
         
         elif command == 'run file':
-            path = params.get('PATH', '')
+            path = decode_value(params.get('PATH', ''))
             args = [path]
         
         elif command == 'if':
-            condition = params.get('CONDITION', '')
-            true_file = params.get('TRUE_FILE', '')
-            false_file = params.get('FALSE_FILE', '')
+            condition = decode_value(params.get('CONDITION', ''))
+            true_file = decode_value(params.get('TRUE_FILE', ''))
+            false_file = decode_value(params.get('FALSE_FILE', ''))
             args = [condition, true_file, false_file]
         
         elif command == 'set':
-            var_name = params.get('VAR_NAME', '')
-            value = params.get('VALUE', '')
+            var_name = decode_value(params.get('VAR_NAME', ''))
+            value = decode_value(params.get('VALUE', ''))
             args = [var_name, value]
         
         elif command == 'transition':
-            trans_type = params.get('TYPE', 'fade')
-            duration = params.get('DURATION', '0.5')
+            trans_type = decode_value(params.get('TYPE', 'fade'))
+            duration = decode_value(params.get('DURATION', '0.5'))
             args = [trans_type, duration]
         
         elif command == 'show_cg':
-            path = params.get('PATH', '')
-            title = params.get('TITLE', '')
-            description = params.get('DESCRIPTION', '')
+            path = decode_value(params.get('PATH', ''))
+            title = decode_value(params.get('TITLE', ''))
+            description = decode_value(params.get('DESCRIPTION', ''))
             args = [path, title, description]
         
         elif command == 'hide_cg':
-            duration = params.get('DURATION', '0.5')
+            duration = decode_value(params.get('DURATION', '0.5'))
             args = [duration]
         
         elif command == 'quit':

@@ -295,7 +295,7 @@ class BaseCharacter:
         self.logic_target_scale = [1.0,1.0]
         self._scale_finished = True
         # 应用DPI缩放
-        self._apply_dpi_scale()
+        #self._apply_dpi_scale()
 
     def change_center(self, center):
         # center为逻辑坐标，转换为物理坐标后设置
@@ -305,9 +305,10 @@ class BaseCharacter:
             real_center = center
         self.character_image.set_center(real_center)
         # 应用DPI缩放
-        self._apply_dpi_scale()
+        #self._apply_dpi_scale()
 
     def _apply_dpi_scale(self):
+        return
         """内部方法：统一应用DPI缩放到Image"""
         if not self.engine.is_full_screen:
             self.character_image.set_scale(self.logic_scale)

@@ -1,11 +1,11 @@
 {
     "version": {
         "editor_ui": "SourcePreview",
-        "player": "v1.1.1-preview",
-        "abt": "v1.0.0-debug"
+        "player": "v1.1.3",
+        "abt": "123"
     },
     "platform": {
         "name": "Windows"
     },
-    "theme": "dark"
+    "theme": "light"
 }

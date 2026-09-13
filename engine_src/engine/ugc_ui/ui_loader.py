@@ -16,10 +16,12 @@ class UILoader:
 
     def load_from_file(self, file_path):
         self.engine.event.emit("ugc_ui_load",{"event":"ugc_ui_load","data":file_path})
-        file_path = file_path
         """从JSON文件加载UI"""
+        file_path = file_path
         config = self.engine.resource_manager.load_json_file(file_path)
-        return self._build_ui(config)
+        root = self._build_ui(config)
+        root.created_elements = self.created_elements
+        return root
 
     def _build_ui(self, config):
         """根据配置构建UI"""
@@ -28,15 +30,12 @@ class UILoader:
             return root
         for element_config in config.get("elements", []):
             element = self._create_element(element_config)
-            #element.engine = self.engine
             if element:
                 root.add_child(element)
-                # 保存元素引用
                 element_id = element_config.get("id")
                 if element_id:
                     self.created_elements[element_id] = element
-                    
-                # 绑定事件
+                    element.id = element_id
                 self._bind_events(element, element_config.get("events", {}))
         return root
 

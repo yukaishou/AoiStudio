@@ -58,7 +58,8 @@ class Engine:
         self.clock.tick(self.fps)
         self.is_full_screen = False
         self.is_looking_backtext = False
-        self.save_game_ui_selected_solt = 0
+        self.save_game_ui_selected_slot = -1  # -1表示未选中
+        self.save_game_ui_active = False  # 存档界面是否打开
         
         # 黑屏转场相关
         self.transition_active = False
@@ -97,6 +98,7 @@ class Engine:
         ui_loader_ = ui_loader.UILoader(self.global_ui_root.get_component("GlobalUIRoot"),self)
         self.main_menu_ui = ui_loader_.load_from_file(self.main_menu_config["main_menu_ui_path"][5:])
         self.save_game_ui = ui_loader_.load_from_file(self.main_menu_config["save_game_ui_path"][5:])
+        self._save_game_ui_loader = ui_loader_
         self.settings = ui_loader_.load_from_file(self.main_menu_config["settings_ui_path"][5:])
 
         try:
@@ -168,8 +170,8 @@ class Engine:
                         "pos_for_scene": self.get_mouse_pos_for_scene(),
                         "button": event.button
                     })
-                    # 打开回溯日志时不再处理对话框点击
-                    if self.in_dialog_game and not self.is_looking_backtext:
+                    # 打开回溯日志或存档界面时不再处理对话框点击
+                    if self.in_dialog_game and not self.is_looking_backtext and not self.save_game_ui_active:
                         self.dialog_choice.handle_click()
                         pos = pygame.mouse.get_pos()
                         if self.dialog_table.rect.collidepoint(pos):
@@ -184,11 +186,13 @@ class Engine:
                     # F11全屏切换
                     if event.key == pygame.K_F11:
                         self.fullscreen()
-                    # S存档 L读档 B打开回溯
+                    # S打开存档界面(保存) L打开存档界面(读取) B打开回溯
                     if event.key == pygame.K_s:
-                        self.save_game_system.save_game(self.save_game_system.get_solt_path(1))
+                        if self.in_dialog_game:
+                            self.global_ui_root.get_component("GlobalUIRoot").on_open_save_in_game()
                     if event.key == pygame.K_l:
-                        self.save_game_system.load_game(self.save_game_system.get_solt_path(1))
+                        if self.in_dialog_game:
+                            self.global_ui_root.get_component("GlobalUIRoot").on_open_load_in_game()
                     if event.key == pygame.K_b:
                         if self.in_dialog_game:
                             self.is_looking_backtext = not self.is_looking_backtext
@@ -221,16 +225,18 @@ class Engine:
                 self.dialog_table.update(delta_time)
                 self.dialog_choice.update()
             self.ugc_ui_manager.update(delta_time)
-            self.ugc_ui_manager.draw(self.screen)
-            # 绘制屏幕转场效果
-            self.screen_transition.draw(self.screen)
 
-            # 调整绘制顺序：先画对话框，再画UI，最后画转场效果
+            # ---- 渲染层 2: UI层 ----
             if self.in_dialog_game:
-                self.dialog_table.render()
-                self.dialog_choice.render()
-                self.dialog_backlog.draw(self.screen)
+                self.dialog_table.render()                 # 对话文本框
+                self.dialog_choice.render()                # 对话选项
+                self.ugc_ui_manager.draw(self.screen)      # UGCUI（存档界面等覆盖对话框）
+                self.dialog_backlog.draw(self.screen)      # 回溯日志
+            else:
+                self.ugc_ui_manager.draw(self.screen)      # 主菜单UI
 
+            # 转场效果始终在最顶层
+            self.screen_transition.draw(self.screen)
 
             self.plugin_manager.update()
             
@@ -302,9 +308,6 @@ class Engine:
         self.running = False
 
     def get_center(self):
-        if self.is_full_screen:
-            return self.fullscreen_center
-        else:
             return self.center
 
     def get_screen_size(self):

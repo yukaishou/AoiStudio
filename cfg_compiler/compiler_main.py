@@ -5,6 +5,10 @@ CFG 脚本编译器 - 将 .cfg 转换为结构化的 .cfg_c 格式
 import os
 import sys
 import re
+import base64
+
+# 全局变量：是否启用base64编码（默认启用）
+ENABLE_BASE64 = True
 
 # 指令映射表：原始指令关键字 -> cfg_c 标签及参数定义
 COMMAND_MAP = {
@@ -31,6 +35,13 @@ COMMAND_MAP = {
     "show_cg": {"tag": "[SHOW] [CG]:", "params": ["PATH", "TITLE", "DESCRIPTION"]},
     "hide_cg": {"tag": "[HIDE] [CG]:", "params": ["DURATION"]},
 }
+
+def encode_value(value):
+    """对参数值进行base64编码（受ENABLE_BASE64控制）"""
+    if ENABLE_BASE64:
+        encoded = base64.b64encode(value.encode('utf-8')).decode('utf-8')
+        return f"b64:{encoded}"
+    return value
 
 def remove_comments(line):
     """移除行中的注释（支持 // 和 #）"""
@@ -70,8 +81,7 @@ def compile_cfg_to_cfgc(input_path, output_path):
                 param_values = params_str.split()
                 for i, param_name in enumerate(info["params"]):
                     if i < len(param_values):
-                        value = param_values[i]
-                        # 处理 file: 前缀或特殊格式
+                        value = encode_value(param_values[i])
                         compiled_lines.append(f"    [{param_name}] {value}")
                 
                 matched = True
@@ -86,10 +96,41 @@ def compile_cfg_to_cfgc(input_path, output_path):
     
     print(f"[Compiler] Success: {output_path}")
 
+def compile_dir(input_dir, output_dir):
+    """将目录下的所有 .cfg 文件编译为 .cfg_c 格式，保留子目录结构"""
+    print(f"[Compiler] Processing directory: {input_dir}")
+
+    if not os.path.exists(input_dir):
+        print(f"[Compiler] Error: Input directory does not exist.")
+        return
+
+    os.makedirs(output_dir, exist_ok=True)
+
+    for root, dirs, files in os.walk(input_dir):
+        # 计算相对路径，用于在输出目录重建文件夹层级
+        rel_root = os.path.relpath(root, input_dir)
+        out_sub_dir = os.path.join(output_dir, rel_root)
+        os.makedirs(out_sub_dir, exist_ok=True)
+
+        for file in files:
+            if file.endswith(".cfg"):
+                input_path = os.path.join(root, file)
+                base_name = os.path.splitext(file)[0]
+                output_path = os.path.join(out_sub_dir, base_name + ".cfg_c")
+                print(f"[Compiler] Compile: {input_path} -> {output_path}")
+                compile_cfg_to_cfgc(input_path, output_path)
+
 if __name__ == "__main__":
+    # 解析命令行参数：--nobase64 参数禁用base64编码
+    if "--nobase64" in sys.argv:
+        ENABLE_BASE64 = False
+        sys.argv.remove("--nobase64")
+    
     if len(sys.argv) < 2:
-        print("Usage: python compiler_main.py <input.cfg>")
+        print("Usage: exe_file [--nobase64] <input.cfg> [output_dir]")
     else:
+        if len(sys.argv) >= 3:
+            compile_dir(sys.argv[1], sys.argv[2])
         input_file = sys.argv[1]
         output_file = os.path.splitext(input_file)[0] + ".cfg_c"
         compile_cfg_to_cfgc(input_file, output_file)

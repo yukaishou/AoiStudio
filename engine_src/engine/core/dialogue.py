@@ -5,13 +5,8 @@ import re
 import os
 import sys
 from engine_src.engine.core import log
+from cfg_compiler.cfg_decompiler import decompile_cfgc_to_cfg
 
-# 添加 cfg_compiler 目录到路径，以便导入反编译器
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', '..', 'cfg_compiler'))
-try:
-    from cfg_decompiler import decompile_cfgc_to_cfg
-except ImportError:
-    decompile_cfgc_to_cfg = None
 
 
 def parse_and_eval(condition_str, context):
@@ -107,11 +102,11 @@ class Dialogue:
                 log.log(2, f"反编译器未加载，无法处理 .cfg_c 文件: {script_path}")
                 return ""
             
-            # 生成临时文件路径（使用绝对路径避免相对路径问题）
+            # 生成临时文件路径（使用系统临时目录以兼容 PyInstaller 打包环境）
             import tempfile
-            temp_dir = os.path.dirname(os.path.abspath(__file__))
-            temp_cfg_c = os.path.join(temp_dir, 'temp_runtime.cfg_c')
-            temp_cfg = os.path.join(temp_dir, 'temp_runtime.cfg')
+            temp_dir = tempfile.gettempdir()
+            temp_cfg_c = os.path.join(temp_dir, 'aoi_temp_runtime.cfg_c')
+            temp_cfg = os.path.join(temp_dir, 'aoi_temp_runtime.cfg')
             
             try:
                 # 写入临时.cfg_c文件

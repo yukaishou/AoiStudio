@@ -27,7 +27,7 @@ License：MIT
 工作流程：
 使用编辑器可视化编辑项目 -> 编辑器输出 .json 文本演出文件 & .cfg 演出脚本文件 -> 使用引擎播放器运行预览游戏。
 
-Releases 链接：https://github.com/你的用户名/你的仓库名/releases
+Releases 链接：https://github.com/yukaishou/AoiStudio/releases
 
 ## 开发者：源码运行 & 编译
 

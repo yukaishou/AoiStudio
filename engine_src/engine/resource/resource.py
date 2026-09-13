@@ -483,7 +483,7 @@ class AssetManager:
     # ====================== 新增接口 ======================
     def load_text_file(self, path: str, encoding="utf-8"):
         """
-        加载文本文件，带缓存
+        加载文本文件，带缓存。支持 .cfg 到 .cfg_c 的自动回退。
         :param path: 资源相对路径
         :param encoding: 文件编码
         :return: 文本字符串 / None
@@ -495,7 +495,17 @@ class AssetManager:
             return self._text_cache[norm_path]
         self.cache_stats["misses"] += 1
 
+        # 尝试加载原始路径
         raw_data = self.load_file_buffer(norm_path)
+        
+        # 如果失败且是 .cfg 文件，尝试加载 .cfg_c
+        if raw_data is None and norm_path.endswith(".cfg"):
+            alt_path = norm_path[:-4] + ".cfg_c"
+            log.log(0, f"[RES] Text file {norm_path} not found, trying {alt_path}")
+            raw_data = self.load_file_buffer(alt_path)
+            if raw_data is not None:
+                norm_path = alt_path # 更新缓存键名
+
         if raw_data is None:
             log.log(2, f"[RES] Text file {norm_path} load failed")
             return None

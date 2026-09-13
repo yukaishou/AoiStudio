@@ -5,8 +5,8 @@
       "type": "UIRect",
       "id": "bg_panel",
       "properties": {
-        "x": 80,
-        "y": 60,
+        "x": 180,
+        "y": 94,
         "width": 840,
         "height": 580,
         "color": [22, 24, 32],
@@ -18,8 +18,8 @@
       "id": "title_text",
       "properties": {
         "text": "读取存档",
-        "x": 100,
-        "y": 80,
+        "x": 200,
+        "y": 114,
         "size": 36,
         "color": [255, 220, 100],
         "font_path": "fonts/default.ttf"
@@ -31,8 +31,8 @@
       "id": "slot_btn_0",
       "properties": {
         "text": "",
-        "x": 100,
-        "y": 140,
+        "x": 200,
+        "y": 174,
         "width": 220,
         "height": 180,
         "font_path": "fonts/default.ttf",
@@ -46,8 +46,8 @@
       "type": "UIRect",
       "id": "slot_bg_0",
       "properties": {
-        "x": 102,
-        "y": 142,
+        "x": 202,
+        "y": 176,
         "width": 216,
         "height": 176,
         "color": [45, 48, 60],
@@ -59,8 +59,8 @@
       "id": "slot0_title",
       "properties": {
         "text": "存档 01",
-        "x": 115,
-        "y": 155,
+        "x": 215,
+        "y": 189,
         "size": 22,
         "color": [240, 240, 240],
         "font_path": "fonts/default.ttf"
@@ -71,8 +71,8 @@
       "id": "slot0_char",
       "properties": {
         "text": "——空存档——",
-        "x": 115,
-        "y": 190,
+        "x": 215,
+        "y": 224,
         "size": 18,
         "color": [160, 160, 160],
         "font_path": "fonts/default.ttf"
@@ -83,8 +83,8 @@
       "id": "slot0_time",
       "properties": {
         "text": "",
-        "x": 115,
-        "y": 220,
+        "x": 215,
+        "y": 254,
         "size": 16,
         "color": [130, 130, 130],
         "font_path": "fonts/default.ttf"
@@ -96,8 +96,8 @@
       "id": "slot_btn_1",
       "properties": {
         "text": "",
-        "x": 340,
-        "y": 140,
+        "x": 440,
+        "y": 174,
         "width": 220,
         "height": 180,
         "font_path": "fonts/default.ttf",
@@ -111,8 +111,8 @@
       "type": "UIRect",
       "id": "slot_bg_1",
       "properties": {
-        "x": 342,
-        "y": 142,
+        "x": 442,
+        "y": 176,
         "width": 216,
         "height": 176,
         "color": [45, 48, 60],
@@ -124,8 +124,8 @@
       "id": "slot1_title",
       "properties": {
         "text": "存档 02",
-        "x": 355,
-        "y": 155,
+        "x": 455,
+        "y": 189,
         "size": 22,
         "color": [240, 240, 240],
         "font_path": "fonts/default.ttf"
@@ -136,8 +136,8 @@
       "id": "slot1_char",
       "properties": {
         "text": "——空存档——",
-        "x": 355,
-        "y": 190,
+        "x": 455,
+        "y": 224,
         "size": 18,
         "color": [160, 160, 160],
         "font_path": "fonts/default.ttf"
@@ -148,8 +148,8 @@
       "id": "slot1_time",
       "properties": {
         "text": "",
-        "x": 355,
-        "y": 220,
+        "x": 455,
+        "y": 254,
         "size": 16,
         "color": [130, 130, 130],
         "font_path": "fonts/default.ttf"
@@ -161,8 +161,8 @@
       "id": "slot_btn_2",
       "properties": {
         "text": "",
-        "x": 580,
-        "y": 140,
+        "x": 680,
+        "y": 174,
         "width": 220,
         "height": 180,
         "font_path": "fonts/default.ttf",
@@ -176,8 +176,8 @@
       "type": "UIRect",
       "id": "slot_bg_2",
       "properties": {
-        "x": 582,
-        "y": 142,
+        "x": 682,
+        "y": 176,
         "width": 216,
         "height": 176,
         "color": [45, 48, 60],
@@ -189,8 +189,8 @@
       "id": "slot2_title",
       "properties": {
         "text": "存档 03",
-        "x": 595,
-        "y": 155,
+        "x": 695,
+        "y": 189,
         "size": 22,
         "color": [240, 240, 240],
         "font_path": "fonts/default.ttf"
@@ -201,8 +201,8 @@
       "id": "slot2_char",
       "properties": {
         "text": "——空存档——",
-        "x": 595,
-        "y": 190,
+        "x": 695,
+        "y": 224,
         "size": 18,
         "color": [160, 160, 160],
         "font_path": "fonts/default.ttf"
@@ -213,8 +213,8 @@
       "id": "slot2_time",
       "properties": {
         "text": "",
-        "x": 595,
-        "y": 220,
+        "x": 695,
+        "y": 254,
         "size": 16,
         "color": [130, 130, 130],
         "font_path": "fonts/default.ttf"
@@ -226,8 +226,8 @@
       "id": "slot_btn_3",
       "properties": {
         "text": "",
-        "x": 100,
-        "y": 340,
+        "x": 200,
+        "y": 374,
         "width": 220,
         "height": 180,
         "font_path": "fonts/default.ttf",
@@ -241,8 +241,8 @@
       "type": "UIRect",
       "id": "slot_bg_3",
       "properties": {
-        "x": 102,
-        "y": 342,
+        "x": 202,
+        "y": 376,
         "width": 216,
         "height": 176,
         "color": [45, 48, 60],
@@ -254,8 +254,8 @@
       "id": "slot3_title",
       "properties": {
         "text": "存档 04",
-        "x": 115,
-        "y": 355,
+        "x": 215,
+        "y": 389,
         "size": 22,
         "color": [240, 240, 240],
         "font_path": "fonts/default.ttf"
@@ -266,8 +266,8 @@
       "id": "slot3_char",
       "properties": {
         "text": "——空存档——",
-        "x": 115,
-        "y": 390,
+        "x": 215,
+        "y": 424,
         "size": 18,
         "color": [160, 160, 160],
         "font_path": "fonts/default.ttf"
@@ -278,8 +278,8 @@
       "id": "slot3_time",
       "properties": {
         "text": "",
-        "x": 115,
-        "y": 420,
+        "x": 215,
+        "y": 454,
         "size": 16,
         "color": [130, 130, 130],
         "font_path": "fonts/default.ttf"
@@ -291,8 +291,8 @@
       "id": "slot_btn_4",
       "properties": {
         "text": "",
-        "x": 340,
-        "y": 340,
+        "x": 440,
+        "y": 374,
         "width": 220,
         "height": 180,
         "font_path": "fonts/default.ttf",
@@ -306,8 +306,8 @@
       "type": "UIRect",
       "id": "slot_bg_4",
       "properties": {
-        "x": 342,
-        "y": 342,
+        "x": 442,
+        "y": 376,
         "width": 216,
         "height": 176,
         "color": [45, 48, 60],
@@ -319,8 +319,8 @@
       "id": "slot4_title",
       "properties": {
         "text": "存档 05",
-        "x": 355,
-        "y": 355,
+        "x": 455,
+        "y": 389,
         "size": 22,
         "color": [240, 240, 240],
         "font_path": "fonts/default.ttf"
@@ -331,8 +331,8 @@
       "id": "slot4_char",
       "properties": {
         "text": "——空存档——",
-        "x": 355,
-        "y": 390,
+        "x": 455,
+        "y": 424,
         "size": 18,
         "color": [160, 160, 160],
         "font_path": "fonts/default.ttf"
@@ -343,8 +343,8 @@
       "id": "slot4_time",
       "properties": {
         "text": "",
-        "x": 355,
-        "y": 420,
+        "x": 455,
+        "y": 454,
         "size": 16,
         "color": [130, 130, 130],
         "font_path": "fonts/default.ttf"
@@ -357,8 +357,8 @@
       "id": "slot_btn_5",
       "properties": {
         "text": "",
-        "x": 580,
-        "y": 340,
+        "x": 680,
+        "y": 374,
         "width": 220,
         "height": 180,
         "font_path": "fonts/default.ttf",
@@ -372,8 +372,8 @@
       "type": "UIRect",
       "id": "slot_bg_5",
       "properties": {
-        "x": 582,
-        "y": 342,
+        "x": 682,
+        "y": 376,
         "width": 216,
         "height": 176,
         "color": [45, 48, 60],
@@ -385,8 +385,8 @@
       "id": "slot5_title",
       "properties": {
         "text": "存档 06",
-        "x": 595,
-        "y": 355,
+        "x": 695,
+        "y": 389,
         "size": 22,
         "color": [240, 240, 240],
         "font_path": "fonts/default.ttf"
@@ -397,8 +397,8 @@
       "id": "slot5_char",
       "properties": {
         "text": "——空存档——",
-        "x": 595,
-        "y": 390,
+        "x": 695,
+        "y": 424,
         "size": 18,
         "color": [160, 160, 160],
         "font_path": "fonts/default.ttf"
@@ -409,8 +409,8 @@
       "id": "slot5_time",
       "properties": {
         "text": "",
-        "x": 595,
-        "y": 420,
+        "x": 695,
+        "y": 454,
         "size": 16,
         "color": [130, 130, 130],
         "font_path": "fonts/default.ttf"
@@ -420,11 +420,27 @@
 
     {
       "type": "UIButton",
+      "id": "btn_save",
+      "properties": {
+        "text": "保存当前进度",
+        "x": 220,
+        "y": 574,
+        "width": 240,
+        "height": 70,
+        "font_path": "fonts/default.ttf",
+        "hit_sound_path": "sounds/button_touch.wav"
+      },
+      "events": {
+        "on_click": "on_save_and_return"
+      }
+    },
+    {
+      "type": "UIButton",
       "id": "btn_load",
       "properties": {
         "text": "读取存档",
-        "x": 120,
-        "y": 540,
+        "x": 220,
+        "y": 574,
         "width": 240,
         "height": 70,
         "font_path": "fonts/default.ttf",
@@ -439,8 +455,8 @@
       "id": "btn_cancel",
       "properties": {
         "text": "返回",
-        "x": 640,
-        "y": 540,
+        "x": 740,
+        "y": 574,
         "width": 240,
         "height": 70,
         "font_path": "fonts/default.ttf",

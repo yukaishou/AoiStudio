@@ -14,17 +14,12 @@ class BaseBackground():
         self.is_fade_out = False
         self.image = engine.resource_manager.load_image(image_path)
         self.image_obj = image.Image(self.image,None,[0,0],[1,1],"fill",self.engine.get_center(),True)
-        if self.engine.is_full_screen:
-            self.image_obj.set_scale(self.engine.dpi.to_real_size([1,1]))
-        else:
-            self.image_obj.set_scale([1,1])
     def update(self):
         self.alpha = smooth_tween.lerp(self.alpha, self.target_alpha, self.speed)
         self.image_obj.set_alpha(self.alpha)
         if self.alpha <= 0.7:
             if self.is_fade_out:
                 self.engine.scene.backgrounds.remove(self)
-
 
     def draw(self, screen):
         self.image_obj.draw(screen)

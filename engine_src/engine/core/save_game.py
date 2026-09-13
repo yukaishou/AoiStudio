@@ -36,8 +36,14 @@ class SaveGame:
                 "position": i.logic_target_position
             }
             characters.append(tmp_chr)
+
+        # 获取最后一句对话文本作为存档预览
+        last_dialogue_text = ""
+        if history_texts:
+            last_dialogue_text = history_texts[-1].get("text", "")[:80]
+
         save_game_data = {
-            "format_version": 2,
+            "format_version": 3,
             "time": f"{date.today().year}/{date.today().month}/{date.today().day}",
             "dialogue": {
                 "file_path": f"file:{dialogue_file_path}",
@@ -69,12 +75,39 @@ class SaveGame:
             json.dump(save_game_data, f, ensure_ascii=False, indent=4)
         log.log(0, f"[SAVE] 完成存档写入：{path}")
 
+        # 保存截图封面
+        self.save_screenshot(path)
+
+    def save_screenshot(self, save_path):
+        """截取当前屏幕作为存档封面"""
+        try:
+            import pygame
+            cover_path = save_path.replace('.save', '_cover.png')
+            pygame.image.save(self.engine.screen, cover_path.replace('\\', '/'))
+            log.log(0, f"[SAVE] 存档封面已保存：{cover_path}")
+        except Exception as e:
+            log.log(2, f"[SAVE] 截图封面失败: {e}")
+
     def load_game(self, path):
         self.engine.event.emit("load_game", {"load_path": path})
         if not os.path.exists(path):
             log.log(2, f"[SAVE] 存档不存在：{path}")
             return
         save_game_data = json.load(open(path, "r", encoding="utf-8"))
+
+        # 格式版本兼容性检查
+        fmt_version = save_game_data.get("format_version", 1)
+        if fmt_version < 2:
+            log.log(1, f"[SAVE] 存档格式较旧 (v{fmt_version}), 尝试兼容加载")
+            if "flags" not in save_game_data:
+                save_game_data["flags"] = []
+            if "variables" not in save_game_data:
+                save_game_data["variables"] = {"characters_affection": {}}
+            if "history_text" not in save_game_data:
+                save_game_data["history_text"] = []
+        if fmt_version > 3:
+            log.log(1, f"[SAVE] 存档格式版本 {fmt_version} 可能不兼容, 尝试加载")
+
         for i in self.engine.scene.bgm:
             i.sound.stop()
         self.engine.scene.bgm = []
@@ -109,27 +142,86 @@ class SaveGame:
                         log.log(1, f"[LOAD] Game object [{go_name}] not found, skipping restore.")
 
         self.engine.dialog.start_dialogue(True)
-        # 限制角色数量,为了防止角色被加载的cfg脚本而加载其他角色
+        # 限制角色数量,以防止角色被加载的cfg脚本而加载其他角色
         self.engine.scene.characters = self.engine.scene.characters[:len(save_game_data["scene"]["characters"])]
         self.engine.in_dialog_game = True
         self.engine.ugc_ui_manager.clear_ui()
         self.engine.main_menu_bgm.stop()
         log.log(0, f"[SAVE] 成功读取存档：{path}")
 
-    def init_solt(self):
-        self.engine.event.emit("init_solt")
+    def init_slot(self):
+        self.engine.event.emit("init_slot")
         if not os.path.exists("saves"):
             os.mkdir("saves")
             log.log(0, "[SAVE] 创建存档目录 saves")
 
-    def load_solt(self, solt_index):
-        self.engine.event.emit("load_solt", {"solt_index": solt_index})
-        self.load_game(f"saves/save_solt{solt_index}.save")
+    def load_slot(self, slot_index):
+        self.engine.event.emit("load_slot", {"slot_index": slot_index})
+        self.load_game(f"saves/save_slot{slot_index}.save")
 
-    def save_solt(self, solt_index):
-        self.engine.event.emit("save_solt", {"solt_index": solt_index})
-        self.init_solt()
-        self.save_game(f"saves/save_solt{solt_index}.save")
+    def save_slot(self, slot_index):
+        self.engine.event.emit("save_slot", {"slot_index": slot_index})
+        self.init_slot()
+        self.save_game(f"saves/save_slot{slot_index}.save")
 
-    def get_solt_path(self, solt_index):
-        return f"saves/save_solt{solt_index}.save"
+    def get_slot_path(self, slot_index):
+        return f"saves/save_slot{slot_index}.save"
+
+    # 兼容旧接口
+    def init_solt(self):
+        self.init_slot()
+
+    def load_solt(self, slot_index):
+        self.load_slot(slot_index)
+
+    def save_solt(self, slot_index):
+        self.save_slot(slot_index)
+
+    def get_solt_path(self, slot_index):
+        return self.get_slot_path(slot_index)
+
+    def get_slot_info(self, slot_index):
+        """获取存档槽位信息，用于UI显示"""
+        path = self.get_slot_path(slot_index)
+        cover_path = path.replace('.save', '_cover.png')
+        if not os.path.exists(path):
+            return {
+                "has_save": False,
+                "time": "",
+                "character": "",
+                "last_dialogue_text": "",
+                "cover_path": None
+            }
+        try:
+            data = json.load(open(path, "r", encoding="utf-8"))
+            last_dialogue_text = ""
+            history = data.get("history_text", [])
+            if history:
+                last_dialogue_text = history[-1].get("text", "")
+                if len(last_dialogue_text) > 60:
+                    last_dialogue_text = last_dialogue_text[:60] + "..."
+
+            characters = data.get("scene", {}).get("characters", [])
+            character_names = []
+            for chr_data in characters:
+                img_path = chr_data.get("image_path", "")
+                char_name = os.path.splitext(os.path.basename(img_path))[0]
+                character_names.append(char_name)
+            character_str = ", ".join(character_names[:3]) if character_names else ""
+
+            return {
+                "has_save": True,
+                "time": data.get("time", ""),
+                "character": character_str,
+                "last_dialogue_text": last_dialogue_text,
+                "cover_path": cover_path if os.path.exists(cover_path) else None
+            }
+        except Exception as e:
+            log.log(2, f"[SAVE] 读取存档信息失败 slot{slot_index}: {e}")
+            return {
+                "has_save": False,
+                "time": "",
+                "character": "",
+                "last_dialogue_text": "",
+                "cover_path": None
+            }

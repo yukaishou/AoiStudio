@@ -9,6 +9,7 @@ from tkinter import filedialog
 from editor.package.os_tools import tool_image_to_ico, tool_chage_exe_icon
 import assets_bundle_package_build
 from common import pyc_compiler
+from cfg_compiler import compiler_main as cfg_compiler
 
 
 class AoiBuildTool:
@@ -22,7 +23,7 @@ class AoiBuildTool:
         self.packager = None
 
     def _backup_project_py(self):
-        """备份项目res全部py文件到备份目录，保留完整目录树"""
+        """备份项目res全部py,cfg文件到备份目录，保留完整目录树"""
         if os.path.exists(self.backup_py_dir):
             shutil.rmtree(self.backup_py_dir)
         os.makedirs(self.backup_py_dir, exist_ok=True)
@@ -34,6 +35,8 @@ class AoiBuildTool:
             os.makedirs(dst_sub, exist_ok=True)
             for f in files:
                 if f.endswith(".py"):
+                    shutil.copy2(os.path.join(root, f), os.path.join(dst_sub, f))
+                elif f.endswith(".cfg"):
                     shutil.copy2(os.path.join(root, f), os.path.join(dst_sub, f))
 
     def _restore_project_py(self):
@@ -47,6 +50,8 @@ class AoiBuildTool:
             for f in files:
                 if f.endswith(".py"):
                     os.remove(os.path.join(root, f))
+                elif f.endswith(".cfg"):
+                    os.remove(os.path.join(root, f))
         # 把备份py复制回原res
         for root, dirs, files in os.walk(self.backup_py_dir):
             rel = os.path.relpath(root, self.backup_py_dir)
@@ -54,24 +59,29 @@ class AoiBuildTool:
             os.makedirs(dst_sub, exist_ok=True)
             for f in files:
                 shutil.copy2(os.path.join(root, f), os.path.join(dst_sub, f))
-        # 清理本次打包产生的pyc，不要残留在项目目录
+        # 清理本次打包产生的pyc,cfg_c，不要残留在项目目录
         for root, dirs, files in os.walk(self.src_res):
             if "__pycache__" in dirs:
                 dirs.remove("__pycache__")
             for f in files:
                 if f.endswith(".pyc"):
                     os.remove(os.path.join(root, f))
+                if f.endswith(".cfg_c"):
+                    os.remove(os.path.join(root, f))
         # 删除备份文件夹
         shutil.rmtree(self.backup_py_dir)
 
     def _project_to_only_pyc(self):
-        """在源项目res：编译pyc，删除py，此时项目只有pyc"""
+        """在源项目res：编译pyc，删除py,cfg，此时项目只有pyc,cfg_c"""
         pyc_compiler.compile_dir(self.src_res, self.src_res)
+        cfg_compiler.compile_dir(self.src_res, self.src_res)
         for root, dirs, files in os.walk(self.src_res):
             if "__pycache__" in dirs:
                 dirs.remove("__pycache__")
             for f in files:
                 if f.endswith(".py"):
+                    os.remove(os.path.join(root, f))
+                elif f.endswith(".cfg"):
                     os.remove(os.path.join(root, f))
 
     def build(self):

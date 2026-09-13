@@ -4,6 +4,8 @@ CFG_C 反编译器 - 将 .cfg_c 转换回 .cfg 格式
 
 import os
 import sys
+import re
+import base64
 
 # cfg_c标签到原始命令的映射
 TAG_TO_COMMAND = {
@@ -30,6 +32,18 @@ TAG_TO_COMMAND = {
     "[SHOW] [CG]:": "show_cg",
     "[HIDE] [CG]:": "hide_cg",
 }
+
+def decode_value(value):
+    """如果值以b64:开头，则将其从base64解码并移除前缀"""
+    if value.startswith("b64:"):
+        encoded = value[4:]  # 移除 "b64:" 前缀
+        try:
+            decoded = base64.b64decode(encoded).decode('utf-8')
+            return decoded  # 完全解码，不保留b64:前缀
+        except Exception:
+            print(f"[Decompiler WARNING] Failed to decode base64 value: {value}")
+            return value
+    return value
 
 def decompile_cfgc_to_cfg(input_path, output_path):
     """将 .cfg_c 文件还原为 .cfg 格式"""
@@ -66,12 +80,14 @@ def decompile_cfgc_to_cfg(input_path, output_path):
                     continue
                 # 参数行应该以[开头，包含]，但不以:结尾（命令标签以:结尾）
                 if param_line.startswith('[') and ']' in param_line and not param_line.endswith(':'):
-                    match = __import__('re').match(r'\[(\w+)\]\s*(.*)', param_line)
+                    match = re.match(r'\[(\w+)\]\s*(.*)', param_line)
                     if match:
                         param_name = match.group(1)
                         param_value = match.group(2).strip()
                         params[param_name] = param_value
-                        print(f"[Decompiler DEBUG]   Param: {param_name} = {param_value}")
+                        print(f"[Decompiler DEBUG]   Param: {param_name} = '{param_value}'")
+                    else:
+                        print(f"[Decompiler WARNING] Failed to parse param line: {param_line}")
                     j += 1
                 else:
                     break
@@ -83,51 +99,77 @@ def decompile_cfgc_to_cfg(input_path, output_path):
             args = []
             
             if command == 'add character':
-                args = [params.get('PATH', ''), params.get('X', '0'), params.get('Y', '0')]
+                path = decode_value(params.get('PATH', ''))
+                if not path: print(f"[Decompiler WARNING] Missing PATH for add character")
+                args = [path, decode_value(params.get('X', '0')), decode_value(params.get('Y', '0'))]
             elif command == 'add background':
-                args = [params.get('PATH', ''), params.get('X', '0'), params.get('Y', '0')]
+                path = decode_value(params.get('PATH', ''))
+                if not path: print(f"[Decompiler WARNING] Missing PATH for add background")
+                args = [path, decode_value(params.get('X', '0')), decode_value(params.get('Y', '0'))]
             elif command == 'add game_object':
-                args = [params.get('NAME', '')]
+                args = [decode_value(params.get('NAME', ''))]
             elif command == 'add component':
-                args = [params.get('GO_NAME', ''), params.get('COMP_TYPE', '')]
+                args = [decode_value(params.get('GO_NAME', '')), decode_value(params.get('COMP_TYPE', ''))]
             elif command == 'add flag':
-                args = [params.get('FLAG_NAME', '')]
+                args = [decode_value(params.get('FLAG_NAME', ''))]
             elif command == 'switch background':
-                args = [params.get('PATH', ''), params.get('TRANSITION', 'fade'), params.get('DURATION', '0.5')]
+                path = decode_value(params.get('PATH', ''))
+                if not path:
+                    print(f"[Decompiler WARNING] Missing PATH for switch background, skipping")
+                    i = j
+                    continue
+                args = [path, decode_value(params.get('TRANSITION', 'fade')), decode_value(params.get('DURATION', '0.5'))]
             elif command == 'switch bgm':
-                args = [params.get('PATH', ''), params.get('FADE_DURATION', '1.0')]
+                path = decode_value(params.get('PATH', ''))
+                if not path:
+                    print(f"[Decompiler WARNING] Missing PATH for switch bgm, skipping")
+                    i = j
+                    continue
+                args = [path, decode_value(params.get('FADE_DURATION', '1.0'))]
             elif command == 'move character':
-                args = [params.get('INDEX', '0'), params.get('X', '0'), params.get('Y', '0'), 
-                       params.get('EASING', 'linear'), params.get('DURATION', '0.5')]
+                args = [decode_value(params.get('INDEX', '0')), decode_value(params.get('X', '0')), decode_value(params.get('Y', '0')), 
+                       decode_value(params.get('EASING', 'linear')), decode_value(params.get('DURATION', '0.5'))]
             elif command == 'animation character':
-                args = [params.get('INDEX', '0'), params.get('TYPE', 'shake'), 
-                       params.get('PARAM1', '8.0'), params.get('PARAM2', '1.0'), params.get('DURATION', '0.5')]
+                args = [decode_value(params.get('INDEX', '0')), decode_value(params.get('TYPE', 'shake')), 
+                       decode_value(params.get('PARAM1', '8.0')), decode_value(params.get('PARAM2', '1.0')), decode_value(params.get('DURATION', '0.5'))]
             elif command == 'wait':
-                args = [params.get('TIME', '1.0')]
+                args = [decode_value(params.get('TIME', '1.0'))]
             elif command == 'quit':
                 args = []
             elif command == 'affection':
-                args = [params.get('CHAR_NAME', ''), params.get('OP', 'add'), params.get('VALUE', '0')]
+                args = [decode_value(params.get('CHAR_NAME', '')), decode_value(params.get('OP', 'add')), decode_value(params.get('VALUE', '0'))]
             elif command == 'remove character':
-                args = [params.get('INDEX', '0')]
+                args = [decode_value(params.get('INDEX', '0'))]
             elif command == 'remove background':
-                args = [params.get('INDEX', '0')]
+                args = [decode_value(params.get('INDEX', '0'))]
             elif command == 'jump dialogue_file':
-                args = [params.get('PATH', '')]
+                args = [decode_value(params.get('PATH', ''))]
             elif command == 'jump dialogue_index':
-                args = [params.get('INDEX', '0')]
+                args = [decode_value(params.get('INDEX', '0'))]
             elif command == 'run file':
-                args = [params.get('PATH', '')]
+                path = decode_value(params.get('PATH', ''))
+                if not path:
+                    print(f"[Decompiler WARNING] Missing PATH for run file, skipping")
+                    i = j
+                    continue
+                # 如果路径以:开头但不是file:，自动添加file前缀
+                if path.startswith(':') and not path.startswith('file:'):
+                    path = 'file' + path
+                    print(f"[Decompiler INFO] Auto-fixed PATH: {path}")
+                # run命令的特殊格式：run file:path（不是run file path）
+                cfg_lines.append(f"run {path}")
+                i = j
+                continue
             elif command == 'if':
-                args = [params.get('CONDITION', ''), params.get('TRUE_FILE', ''), params.get('FALSE_FILE', '')]
+                args = [decode_value(params.get('CONDITION', '')), decode_value(params.get('TRUE_FILE', '')), decode_value(params.get('FALSE_FILE', ''))]
             elif command == 'set':
-                args = [params.get('VAR_NAME', ''), params.get('VALUE', '')]
+                args = [decode_value(params.get('VAR_NAME', '')), decode_value(params.get('VALUE', ''))]
             elif command == 'transition':
-                args = [params.get('TYPE', 'fade'), params.get('DURATION', '0.5')]
+                args = [decode_value(params.get('TYPE', 'fade')), decode_value(params.get('DURATION', '0.5'))]
             elif command == 'show_cg':
-                args = [params.get('PATH', ''), params.get('TITLE', ''), params.get('DESCRIPTION', '')]
+                args = [decode_value(params.get('PATH', '')), decode_value(params.get('TITLE', '')), decode_value(params.get('DESCRIPTION', ''))]
             elif command == 'hide_cg':
-                args = [params.get('DURATION', '0.5')]
+                args = [decode_value(params.get('DURATION', '0.5'))]
             
             # 组装命令字符串
             if args:
@@ -151,7 +193,7 @@ def decompile_cfgc_to_cfg(input_path, output_path):
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print("Usage: python cfg_decompiler.py <input.cfg_c>")
+        print("Usage: exe_file <input.cfg_c>")
     else:
         input_file = sys.argv[1]
         output_file = os.path.splitext(input_file)[0] + ".cfg"
