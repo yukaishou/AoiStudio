@@ -12,7 +12,7 @@ from engine_src.engine.core import dialogue
 from engine_src.engine.core import cfg_decoder
 import engine_src.engine.core.cfg_decoder
 CFGDecoderClass = engine_src.engine.core.cfg_decoder.CFGDecoder
-from engine_src.engine.utils import dpi_tool
+from engine_src.engine.utils import dpi_tool, smooth_tween
 from engine_src.engine.core import save_game
 from engine_src.engine.ui import dialog_backtext
 from engine_src.engine.ugc_ui import ui_manager
@@ -24,7 +24,7 @@ from engine_src.engine.core.event import event_bus
 from engine_src.engine.g_o import g_o_manager
 from engine_src.engine.core import input
 from engine_src.engine.core.screen_transition import ScreenTransition
-
+from engine_src.engine.utils import image_tool
 
 
 class Engine:
@@ -67,6 +67,10 @@ class Engine:
         self.transition_duration = 0.5
         self.transition_alpha = 0
         self.transition_target_callback = None
+
+        # 工具赋值，方便外部调用
+        self.image_tool = image_tool
+        self.smooth_tween = smooth_tween
 
         # 初始化模块
         self.dpi = dpi_tool.DPITool(self.game_size, pygame.display.list_modes()[0])

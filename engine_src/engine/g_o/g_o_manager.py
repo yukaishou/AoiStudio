@@ -2,14 +2,15 @@ import os
 
 from engine_src.engine.core import log
 from engine_src.engine.g_o.game_object_base import GameObjectBase
-from engine_src.engine.g_o.components import sprite_renderer, audio_player, collsion_box
+from engine_src.engine.g_o.components import sprite_renderer, audio_player, collsion_box, animator
 from engine_src.engine.core.global_go_components import global_ui_root
 
 COMPONENTS_MAP = {
     "SpriteRenderer": sprite_renderer.SpriteRenderer,
     "AudioPlayer":audio_player.AudioPlayer,
     "CollisionBox":collsion_box.CollisionBox,
-    "GlobalUIRoot":global_ui_root.GlobalUIRoot
+    "GlobalUIRoot":global_ui_root.GlobalUIRoot,
+    "Animator":animator.Animator
 }
 
 class GOManager:

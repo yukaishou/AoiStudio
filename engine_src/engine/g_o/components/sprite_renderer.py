@@ -1,3 +1,5 @@
+import pygame
+
 from engine_src.engine.g_o.component_base import ComponentBase
 from engine_src.engine.core.image import Image
 
@@ -63,6 +65,13 @@ class SpriteRenderer(ComponentBase):
         if new_surf and self.image_wrapper:
             self.original_img = new_surf
             self.image_wrapper.set_image(img=new_surf)
+
+    def set_image(self, img: pygame.Surface | None):
+        if img:
+            self.original_img = img
+            if self.image_wrapper:
+                self.image_wrapper.set_image(img=img)
+                self.image_path = "None"
 
     def set_alpha(self, value: float):
         self.alpha = max(0.0, min(255.0, value))

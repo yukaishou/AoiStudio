@@ -27,7 +27,9 @@ from editor import editor_character
 from editor import editor_main_menu_settings
 from editor import editor_doc_view
 from editor import editor_python_edit
+from editor import editor_package_importer
 import subprocess
+from editor import editor_animation
 
 import zipfile
 
@@ -436,6 +438,10 @@ class FileManagerPage(QWidget):
         act_new_python_script.triggered.connect(lambda _, d=current_dir: self.create_new_python_script(d))
         menu.addAction(act_new_python_script)
 
+        act_new_anim = QAction("新建动画", self)
+        act_new_anim.triggered.connect(lambda _, d=current_dir: self._new_anim_file(d))
+        menu.addAction(act_new_anim)
+
         if index.isValid():
             sel_path = self.fs_model.filePath(index)
 
@@ -471,6 +477,11 @@ class FileManagerPage(QWidget):
                     act_edit_script = QAction("Python编辑", self)
                     act_edit_script.triggered.connect(lambda _, p=sel_path: self.main_win.python_editor_tab(p, self.main_win))
                     menu.addAction(act_edit_script)
+
+                if sel_path.endswith(".anim"):
+                    act_edit_anim = QAction("动画编辑", self)
+                    act_edit_anim.triggered.connect(lambda _, p=sel_path: self.main_win.open_animation_editor(p))
+                    menu.addAction(act_edit_anim)
 
         if self.clip_path:
             act_paste = QAction("粘贴", self)
@@ -613,6 +624,28 @@ class FileManagerPage(QWidget):
                 return
             shutil.copyfile("res/python_script_template.txt", script_path)
 
+    def _new_anim_file(self, target_dir):
+        """在指定目录新建 .anim 文件，并打开动画编辑器。"""
+        name, ok = QInputDialog.getText(self, "新建动画", "动画文件名称（不需要后缀）：")
+        if ok and name.strip():
+            anim_path = os.path.join(target_dir, f"{name.strip()}.anim")
+            if os.path.exists(anim_path):
+                QMessageBox.warning(self, "错误", "文件已存在")
+                return
+            default_data = {
+                "speed": 1.0,
+                "frame_duration": 0.1,
+                "path": "",
+                "frames": 1,
+                "keys": [],
+                "loop": True,
+                "auto_play": True
+            }
+            with open(anim_path, "w", encoding="utf-8") as f:
+                json.dump(default_data, f, ensure_ascii=False, indent=4)
+            # 打开编辑器
+            self.main_win.open_animation_editor(anim_path)
+
 
 class MainEditorWindow(QMainWindow):
     def __init__(self):
@@ -670,6 +703,11 @@ class MainEditorWindow(QMainWindow):
             file_menu.addAction(ui_editor_act)
         except ImportError:
             pass  # UI 编辑器不存在时跳过
+
+        # 动画编辑器入口
+        anim_editor_act = QAction("动画编辑器", self)
+        anim_editor_act.triggered.connect(self.open_animation_editor)
+        file_menu.addAction(anim_editor_act)
 
         view_menu = menubar.addMenu("项目")
         open_fm_act = QAction("打开项目", self)
@@ -765,13 +803,16 @@ class MainEditorWindow(QMainWindow):
 
         # 保存进程对象，用于后续关闭预览
         self._preview_game_proc = None
-        threading.Thread(target=self.preview_game_thread, daemon=True).start()
         threading.Thread(target=self.preview_game_debugger, daemon=True).start()
+
+        threading.Thread(target=self.preview_game_thread, daemon=True).start()
+
 
     def preview_game_thread(self):
         player_path = open("caches/debug_player_path.txt", encoding="utf-8").read().strip()
         project_cwd = self.project_path
-
+        o_p = os.getcwd()
+        os.chdir(self.project_path)
         try:
             self._preview_game_proc = subprocess.Popen(
                 [player_path],
@@ -799,6 +840,7 @@ class MainEditorWindow(QMainWindow):
         except Exception as e:
             print(f"[预览启动异常] {e}")
         self._preview_game_proc = None
+        os.chdir(o_p)
 
     def preview_game_debugger(self):
         dp = self.debugger_path.strip()
@@ -1009,6 +1051,35 @@ class MainEditorWindow(QMainWindow):
         cmd = [abt_path, self.project_path, output_path, pl_path]
         subprocess.Popen(cmd, creationflags=subprocess.CREATE_NEW_CONSOLE)
 
+    def dragEnterEvent(self, event):
+        # 判断拖拽内容是否包含文件
+        if not self.is_opening_project:
+            event.ignore()
+            return
+        if event.mimeData().hasUrls():
+            event.acceptProposedAction()  # 允许拖入
+        else:
+            event.ignore()
+
+    def dropEvent(self, event):
+            """拖拽松开，获取所有文件路径"""
+            urls = event.mimeData().urls()
+            file_paths = []
+            for url in urls:
+                if url.isLocalFile():
+                    path = url.toLocalFile()
+                    file_paths.append(path)
+            # file_paths 就是拖进来的本地文件列表
+            print("拖入文件：", file_paths)
+
+
+            for fp in file_paths:
+                if fp.endswith(".aoipackage"):
+                    ent = editor_package_importer.read_bundle_entries(fp)
+                    importer = editor_package_importer.AoiPackageImportDialog(fp,ent,self.project_path)
+                    importer.exec_()
+            event.acceptProposedAction()
+
     def edit_character(self):
         if not self.is_opening_project:
             QMessageBox.warning(self, "错误", "请先打开项目")
@@ -1031,6 +1102,22 @@ class MainEditorWindow(QMainWindow):
         except Exception as e:
             traceback.print_exc()
             QMessageBox.warning(self, "错误", f"打开 UI 编辑器失败：{str(e)}")
+
+    def open_animation_editor(self, anim_path: str = None):
+        """打开动画编辑器，可选传入 .anim 文件路径。"""
+        try:
+            win = editor_animation.AnimationEditorWindow(self, anim_path=anim_path)
+            # 如果项目已打开，优先用当前项目路径（比自动推断更可靠）
+            if self.is_opening_project:
+                win.project_path = self.project_path
+                win.props_panel.set_project_path(self.project_path)
+                # 如果已加载了文件，重新刷新帧
+                if win.anim_file_path:
+                    win._refresh_frames()
+            win.show()
+        except Exception as e:
+            traceback.print_exc()
+            QMessageBox.warning(self, "错误", f"打开动画编辑器失败：{str(e)}")
 
     def build_id_file(self):
         if not self.is_opening_project:
